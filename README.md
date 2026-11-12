@@ -1,7 +1,5 @@
 # HemaFlow — Haematology Laboratory Management System
 
-A web application for a haematology laboratory. Patients register, keep a medical profile, control which doctors may see their results, and view, track and download their results as PDF reports. Doctors request tests, lab technicians capture and verify results, and lab managers run the test catalogue, stock and suppliers. Built with **ASP.NET Core MVC**.
-
 Developed as part of **ONP400** at Nelson Mandela University (Group GRP-04-13).
 
 ## Background
