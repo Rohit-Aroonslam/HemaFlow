@@ -1,0 +1,269 @@
+@inject Project.Data.ApplicationDbContext Db
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link rel="icon" type="image/x-icon" href="~/favicon.ico" />
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>@ViewData["Title"] - Admin | Hema Flow</title>
+		<link rel="stylesheet" href="~/lib/inter/inter.css" asp-append-version="true" />
+		<link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+		<link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" asp-append-version="true" />
+		<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+		<style>
+			:root {
+			--hema-navy: #0f172a;
+			--hema-blue: #3b82f6;
+			--lt-w: 18vw;
+			}
+
+			body {
+			font-family: 'Inter', sans-serif;
+			background: #f8fafc;
+			color: #0f172a;
+			overflow-x: hidden;
+			}
+
+			.lt-sidebar {
+			position: fixed;
+			left: 0;
+			top: 0;
+			width: var(--lt-w);
+			height: 100vh;
+			background: var(--hema-navy);
+			display: flex;
+			flex-direction: column;
+			z-index: 200;
+			overflow-y: auto;
+			}
+
+			.lt-brand {
+			font-size: 1.35rem;
+			color: #fff;
+			font-weight: 700;
+			padding: 1.4rem 1.25rem 1rem;
+			border-bottom: 1px solid rgba(255,255,255,0.06);
+			flex-shrink: 0;
+			}
+
+			.lt-brand-sub {
+			font-size: 0.62rem;
+			font-weight: 500;
+			letter-spacing: 0.09em;
+			text-transform: uppercase;
+			color: rgba(255,255,255,0.3);
+			display: block;
+			margin-top: 0.2rem;
+			}
+
+			.lt-nav {
+			padding: 0.75rem 0;
+			flex: 1;
+			}
+
+			.lt-nav-section {
+			font-size: 0.58rem;
+			font-weight: 600;
+			letter-spacing: 0.1em;
+			text-transform: uppercase;
+			color: rgba(255,255,255,0.22);
+			padding: 0.9rem 1.25rem 0.3rem;
+			}
+
+			.lt-nav-link {
+			display: flex;
+			align-items: center;
+			gap: 0.7rem;
+			padding: 0.55rem 1.25rem;
+			color: rgba(255,255,255,0.6);
+			text-decoration: none;
+			font-size: 0.82rem;
+			font-weight: 500;
+			border-left: 3px solid transparent;
+			transition: all 0.15s;
+			}
+
+			.lt-nav-link:hover {
+			color: #fff;
+			background: rgba(255,255,255,0.05);
+			}
+
+			.lt-nav-link.active {
+			color: #fff;
+			background: rgba(59,130,246,0.14);
+			border-left-color: var(--hema-blue);
+			}
+
+			.lt-nav-link i {
+			font-size: 0.95rem;
+			width: 1rem;
+			text-align: center;
+			flex-shrink: 0;
+			}
+
+			.lt-sidebar-footer {
+			padding: 0.9rem 1.25rem;
+			border-top: 1px solid rgba(255,255,255,0.06);
+			font-size: 0.72rem;
+			color: rgba(255,255,255,0.35);
+			flex-shrink: 0;
+			}
+
+			.lt-sidebar-footer strong {
+			color: rgba(255,255,255,0.7);
+			display: block;
+			font-size: 0.78rem;
+			margin-bottom: 0.1rem;
+			}
+
+			.admin-main {
+			margin-left: var(--lt-w);
+			min-height: 100vh;
+			padding: 1.75rem 2rem 3rem;
+			}
+
+			/* ── Square corners, project-wide standard (no rounded UI) ── */
+			.dash-section, .chart-card, .card, .glass-card {
+			border-radius: 0 !important;
+			}
+
+			.btn, .btn-dark, .btn-outline-primary, .btn-outline-secondary, .btn-light, .btn-print {
+			border-radius: 0 !important;
+			}
+
+			.badge, .rounded-pill {
+			border-radius: 0 !important;
+			}
+
+			.modal-content {
+			border-radius: 0 !important;
+			}
+
+			.form-control, .form-select {
+			border-radius: 0 !important;
+			}
+		.lt-nav-link.logout-link { color: rgba(255,100,100,0.85) !important; }
+.lt-nav-link.logout-link:hover { color: #ff6464 !important; background: rgba(255,100,100,0.08) !important; }
+
+		/* Compact sidebar so everything fits without scrolling; Log out sits at the bottom. */
+		.lt-brand { padding: 0.8rem 1.1rem 0.6rem !important; font-size: 1.2rem !important; }
+		.lt-nav { padding: 0.15rem 0 !important; min-height: 0; overflow-y: auto; }
+		.lt-nav-section { padding: 0.5rem 1.1rem 0.12rem !important; }
+		.lt-nav-link { padding: 0.34rem 1.1rem !important; font-size: 0.8rem !important; }
+		.lt-logout { flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.06); }
+		.lt-sidebar-footer { padding: 0.55rem 1.1rem !important; }
+</style>
+	    <script src="~/js/hemaui.js" asp-append-version="true"></script>
+</head>
+	<body>
+		@{
+		var _action = ViewContext.RouteData.Values["action"]?.ToString();
+		}
+
+		<aside class="lt-sidebar">
+			<div class="lt-brand">
+				Hema Flow
+				<span class="lt-brand-sub">Admin Portal</span>
+			</div>
+
+			<nav class="lt-nav">
+				<div class="lt-nav-section">Overview</div>
+				<a asp-controller="Admin" asp-action="Index" class='lt-nav-link @(_action == "Index" ? "active" : "")'>
+					<i class="bi bi-speedometer2"></i> Dashboard
+				</a>
+
+				<div class="lt-nav-section">Master Data</div>
+				<a asp-controller="Admin" asp-action="GlobalCategories" class='lt-nav-link @(_action == "GlobalCategories" ? "active" : "")'>
+					<i class="bi bi-tags"></i> Categories
+				</a>
+				<a asp-controller="Admin" asp-action="MedicalConditions" class='lt-nav-link @(_action is "MedicalConditions" or "CreateCondition" ? "active" : "")'>
+					<i class="bi bi-clipboard2-pulse"></i> Medical Conditions
+				</a>
+				<a asp-controller="Admin" asp-action="Allergies" class='lt-nav-link @(_action is "Allergies" or "CreateAllergy" ? "active" : "")'>
+					<i class="bi bi-exclamation-triangle"></i> Allergies
+				</a>
+				<a asp-controller="Admin" asp-action="Medications" class='lt-nav-link @(_action is "Medications" or "CreateMedication" ? "active" : "")'>
+					<i class="bi bi-capsule"></i> Medications
+				</a>
+
+				<div class="lt-nav-section">Users</div>
+				<a asp-controller="Admin" asp-action="UserManagement" class='lt-nav-link @(_action == "UserManagement" ? "active" : "")'>
+					<i class="bi bi-people"></i> User Management
+				</a>
+				<a asp-controller="Admin" asp-action="PendingApprovals" class='lt-nav-link d-flex align-items-center @(_action == "PendingApprovals" ? "active" : "")'>
+					<i class="bi bi-clock-history"></i> Pending Approvals
+					@{
+					var pendingCount = Db.PendingApprovals.Count(p => p.ApprovalStatusId == 1);
+					}
+					@if (pendingCount > 0)
+					{
+					<span class="badge bg-danger ms-auto" style="font-size:0.62rem;">@pendingCount</span>
+					}
+				</a>
+
+				<div class="lt-nav-section">System</div>
+				<a asp-controller="Admin" asp-action="ActivityLog" class='lt-nav-link @(_action == "ActivityLog" ? "active" : "")'>
+					<i class="bi bi-activity"></i> System Activity
+				</a>
+				<a asp-controller="Admin" asp-action="SystemArchive" class='lt-nav-link @(_action == "SystemArchive" ? "active" : "")'>
+					<i class="bi bi-archive"></i> Archived Records
+				</a>
+
+				<div class="lt-nav-section">Account</div>
+				<a asp-controller="Admin" asp-action="Profile" class='lt-nav-link @(_action == "Profile" ? "active" : "")'>
+					<i class="bi bi-person-circle"></i> My Profile
+				</a>
+
+			</nav>
+		<div class="lt-logout">
+				<a asp-controller="Account" asp-action="Logout" class="lt-nav-link logout-link"
+				   data-confirm-link=""
+				   data-confirm="You'll need to sign in again to access the admin panel."
+				   data-confirm-title="Log out?"
+				   data-confirm-text="Logout">
+					<i class="bi bi-box-arrow-left"></i> Log out
+				</a>
+		</div>
+
+			<div class="lt-sidebar-footer">
+				<strong>@(User.Identity?.Name ?? "Administrator")</strong>
+				@(User.IsInRole("SuperAdmin") ? "Super Admin" : "Admin")
+			</div>
+		</aside>
+
+		<main class="admin-main">
+			@if (TempData["Success"] != null)
+			{
+			<div data-toast="success" class="alert alert-success rounded-0 border-0 border-start border-3 border-success small mb-4" role="alert">
+				<i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+			</div>
+			}
+			@if (TempData["DupError"] != null)
+			{
+			<div data-toast="danger" class="alert alert-danger rounded-0 border-0 border-start border-3 border-danger small mb-4" role="alert">
+				<i class="bi bi-exclamation-circle me-2"></i>@TempData["DupError"]
+			</div>
+			}
+			@if (TempData["RestorePrompt"] is string rp && rp.Split('|').Length == 4)
+			{
+				var rpParts = rp.Split('|');
+			<div class="alert alert-warning rounded-0 border-0 border-start border-3 border-warning small mb-4 d-flex flex-wrap align-items-center justify-content-between gap-2" role="alert">
+				<span><i class="bi bi-archive me-2"></i><strong>'@rpParts[2]'</strong> already exists in the archive. Would you rather restore it than create a new one?</span>
+				<form asp-controller="Admin" asp-action="RestoreEntity" method="post" class="d-inline">
+					@Html.AntiForgeryToken()
+					<input type="hidden" name="entityType" value="@rpParts[0]" />
+					<input type="hidden" name="entityId" value="@rpParts[1]" />
+					<input type="hidden" name="returnTo" value="@rpParts[3]" />
+					<button type="submit" class="btn btn-sm btn-dark rounded-0"><i class="bi bi-arrow-counterclockwise me-1"></i>Restore it</button>
+				</form>
+			</div>
+			}
+			@RenderBody()
+		</main>
+
+		<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+		<script src="~/js/password-eye.js" asp-append-version="true"></script>
+		<script src="~/js/site.js"></script>
+		@await RenderSectionAsync("Scripts", required: false)
+	</body>
+</html>

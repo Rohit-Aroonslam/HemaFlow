@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link rel="icon" type="image/x-icon" href="~/favicon.ico" />
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>@ViewData["Title"] - Hema Flow</title>
+		<link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+		<link rel="stylesheet" href="~/lib/inter/inter.css" asp-append-version="true" />
+		<link rel="stylesheet" href="~/lib/sora/sora.css" asp-append-version="true" />
+		<link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" asp-append-version="true" />
+		<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+		<style>
+			:root {
+			--hema-navy: #0f172a;
+			--hema-blue: #3b82f6;
+			}
+
+			html {
+			height: 100%;
+			}
+
+			body {
+			font-family: 'Inter', sans-serif;
+			color: var(--hema-navy);
+			overflow-x: hidden;
+			padding-top: 80px; /* Added padding so content doesn't hide under fixed nav */
+			min-height: 100%;
+			display: flex;
+			flex-direction: column;
+			margin: 0;
+			}
+
+			/* Content grows to fill available space; footer sits right after it
+			with no extra whitespace below, however short the page content is */
+			.main-content {
+			flex: 1 0 auto;
+			}
+
+			.main-footer {
+			flex-shrink: 0;
+			}
+
+			/* Brand wordmark (Sora) in the logo colours */
+			.brand-wordmark {
+			font-family: 'Sora', 'Inter', sans-serif;
+			font-weight: 700;
+			font-size: 1.6rem;
+			letter-spacing: -0.02em;
+			}
+			.brand-wordmark .bw-hema { color: #c8102e; }
+			.brand-wordmark .bw-flow { color: #0f2a5c; }
+
+			/* Glass Nav */
+			.navbar {
+			backdrop-filter: blur(15px);
+			background: rgba(255, 255, 255, 0.8);
+			border-bottom: 1px solid rgba(0,0,0,0.05);
+			padding: 1rem 0;
+			}
+
+			.nav-link {
+			font-weight: 600;
+			color: var(--hema-navy) !important;
+			margin: 0 10px;
+			position: relative;
+			transition: color 0.2s ease;
+			}
+
+			.nav-link::after {
+			content: '';
+			position: absolute;
+			left: 0;
+			bottom: -2px;
+			width: 0;
+			height: 2px;
+			background: var(--hema-blue);
+			transition: width 0.2s ease;
+			}
+
+			.nav-link:hover {
+			color: var(--hema-blue) !important;
+			}
+
+			.nav-link:hover::after {
+			width: 100%;
+			}
+
+			.btn-premium {
+			background: var(--hema-navy);
+			color: white;
+			border-radius: 0;
+			padding: 0.6rem 2rem;
+			transition: 0.3s;
+			}
+
+			.btn-premium:hover {
+			background: var(--hema-blue);
+			color: white;
+			transform: translateY(-2px);
+			}
+
+			/* Hover dropdown for Lab Manager */
+			/*  .nav-item.dropdown:hover .dropdown-menu {
+			display: block;
+			margin-top: 0;
+			opacity: 1;
+			} */
+
+			.dropdown-menu {
+			display: none;
+			opacity: 0;
+			transition: opacity 0.2s ease-in-out;
+			border: 0;
+			box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+			border-radius: 0;
+			}
+		</style>
+	    <script src="~/js/hemaui.js" asp-append-version="true"></script>
+</head>
+	<body>
+		<nav class="navbar navbar-expand-lg fixed-top">
+			<div class="container">
+				<a class="navbar-brand brand-wordmark" asp-controller="Home" asp-action="Index"><span class="bw-hema">Hema</span><span class="bw-flow">Flow</span></a>
+				<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+					<span class="navbar-toggler-icon"></span>
+				</button>
+
+				<div class="collapse navbar-collapse justify-content-center" id="navbarContent">
+					<ul class="navbar-nav">
+						<li class="nav-item">
+							<a class="nav-link" asp-controller="Home" asp-action="Index">Home</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" asp-controller="Home" asp-action="Contact">Contact Us</a>
+						</li>
+					</ul>
+				</div>
+				<a asp-controller="Account" asp-action="Login" class="btn btn-dark rounded-0 px-4">Sign In</a>
+			</div>
+		</nav>
+
+		<div class="main-content">
+			@RenderBody()
+		</div>
+
+		<footer class="main-footer">
+			<div class="container">
+				<div class="row g-5">
+					<!-- Left: Logo & Bio -->
+					<div class="col-lg-4">
+						<a asp-controller="Home" asp-action="Index" class="footer-logo" style="font-family:'Sora','Inter',sans-serif;">Hema Flow</a>
+						<p class="pe-lg-5 text-justify">
+							Hema Flow is a prestige haematology management system designed for the Nelson Mandela Bay region.
+							We provide sophisticated digital infrastructure for clinical laboratories,
+							connecting patients and doctors with precision diagnostic data.
+						</p>
+						<div class="mt-4">
+							<a href="#" class="text-white me-3">
+								<i class="bi bi-linkedin"></i>
+							</a>
+							<a href="#" class="text-white me-3">
+								<i class="bi bi-twitter-x"></i>
+							</a>
+							<a href="#" class="text-white">
+								<i class="bi bi-envelope-fill"></i>
+							</a>
+						</div>
+					</div>
+
+					<!-- Middle: Quick Links -->
+					<div class="col-md-4 col-lg-2">
+						<h6 class="footer-heading text-uppercase">Quick Links</h6>
+						<nav>
+							<a asp-controller="Home" asp-action="Index" class="footer-link">Home</a>
+							<a asp-controller="Home" asp-action="Contact" class="footer-link">Contact Us</a>
+							<a asp-controller="Account" asp-action="Login" class="footer-link">Portal Login</a>
+							<a asp-controller="Account" asp-action="Register" class="footer-link">Patient Registration</a>
+						</nav>
+					</div>
+
+					<!-- Middle: Legal Links -->
+					<div class="col-md-4 col-lg-2">
+						<h6 class="footer-heading text-uppercase">Legal</h6>
+						<nav>
+							<a asp-controller="Home" asp-action="Privacy" class="footer-link">Privacy Policy</a>
+							<a asp-controller="Home" asp-action="Privacy" class="footer-link">Terms of Service</a>
+							<a asp-controller="Home" asp-action="Privacy" asp-fragment="your-rights" class="footer-link">POPIA Compliance</a>
+							<a asp-controller="Home" asp-action="Privacy" asp-fragment="cookies" class="footer-link">Cookie Settings</a>
+						</nav>
+					</div>
+
+					<!-- Right: Contact Info -->
+					<div class="col-md-4 col-lg-4">
+						<h6 class="footer-heading text-uppercase">Get In Touch</h6>
+						<div class="contact-item">
+							<i class="bi bi-geo-alt-fill"></i>
+							<span>
+								123 Medical Drive, Gqeberha,<br />Eastern Cape, South Africa
+							</span>
+						</div>
+						<div class="contact-item">
+							<i class="bi bi-telephone-fill"></i>
+							<span>+27 (0) 41 504 1111</span>
+						</div>
+						<div class="contact-item">
+							<i class="bi bi-envelope-at-fill"></i>
+							<span>support@hemaflow.co.za</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Bottom Bar -->
+				<div class="footer-bottom text-center">
+					<p class="mb-0">
+						&#169; 2026 HemaFlow | Designed &amp; Developed by <strong>The Randies</strong>
+					</p>
+				</div>
+			</div>
+		</footer>
+		<style>
+			.main-footer {
+			background-color: #0f172a; /* Deep Navy */
+			color: rgba(255, 255, 255, 0.7);
+			padding: 80px 0 30px 0;
+			font-size: 0.9rem;
+			}
+
+			.footer-logo {
+			color: #ffffff;
+			font-family: 'Playfair Display', serif;
+			font-size: 1.8rem;
+			font-weight: 700;
+			margin-bottom: 1.5rem;
+			display: block;
+			text-decoration: none;
+			}
+
+			.footer-heading {
+			color: #ffffff;
+			font-weight: 700;
+			letter-spacing: 1px;
+			font-size: 0.8rem;
+			margin-bottom: 1.5rem;
+			text-transform: uppercase;
+			}
+
+			.footer-link {
+			color: rgba(255, 255, 255, 0.6);
+			text-decoration: none;
+			display: block;
+			margin-bottom: 0.8rem;
+			transition: 0.3s;
+			}
+
+			.footer-link:hover {
+			color: #3b82f6; /* Hema Blue */
+			padding-left: 5px;
+			}
+
+			.contact-item {
+			display: flex;
+			align-items: flex-start;
+			margin-bottom: 1rem;
+			}
+
+			.contact-item i {
+			color: #3b82f6;
+			margin-right: 12px;
+			margin-top: 3px;
+			}
+
+			.footer-bottom {
+			border-top: 1px solid rgba(255, 255, 255, 0.1);
+			padding-top: 30px;
+			margin-top: 50px;
+			font-size: 0.8rem;
+			}
+		</style>
+
+		<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+		<script src="~/js/password-eye.js" asp-append-version="true"></script>
+		<script src="~/js/site.js"></script>
+
+
+		<script>
+			function togglePassword(inputId) {
+			// 1. Get the input field
+			const passwordInput = document.getElementById(inputId);
+			// 2. Get the icon inside the button
+			const icon = document.getElementById(inputId + 'Icon');
+
+			if (!passwordInput || !icon) {
+			console.error("Could not find elements for ID: " + inputId);
+			return;
+			}
+			if (passwordInput.type === "password") {
+			passwordInput.type = "text";
+			icon.classList.remove("bi-eye-slash");
+			icon.classList.add("bi-eye");
+			} else {
+			passwordInput.type = "password";
+			icon.classList.remove("bi-eye");
+			icon.classList.add("bi-eye-slash");
+			}
+			}
+		</script>
+
+		@await RenderSectionAsync("Scripts", required: false)
+
+	</body>
+</html>

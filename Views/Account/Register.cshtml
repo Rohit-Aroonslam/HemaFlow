@@ -1,0 +1,423 @@
+@{
+    ViewData["Title"] = "Patient Registration";
+    Layout = "_Layout";
+}
+
+<div class="container" style="padding-top:90px; padding-bottom:40px;">
+    <div class="row justify-content-center">
+        <div class="col-lg-11 col-xl-10">
+            <div class="auth-card" style="border:1px solid #e1e1e1; background:#fff;">
+                <div class="row g-0">
+
+                    @* Left info panel *@
+                    <div class="col-lg-4 d-none d-lg-flex flex-column justify-content-between p-4" style="background:#0f172a; color:#fff;">
+                        <div>
+                            <h5 class="fw-bold mb-1">Patient Portal</h5>
+                            <p class="mb-4" style="font-size:0.8rem; color:rgba(255,255,255,0.45);">Registering gives you access to:</p>
+                            <ul class="list-unstyled" style="font-size:0.85rem; color:rgba(255,255,255,0.65);">
+                                <li class="mb-3 d-flex align-items-start gap-2"><i class="bi bi-check2 mt-1" style="color:#60a5fa;"></i> Real-time test results</li>
+                                <li class="mb-3 d-flex align-items-start gap-2"><i class="bi bi-check2 mt-1" style="color:#60a5fa;"></i> Historical haematology trends</li>
+                                <li class="mb-3 d-flex align-items-start gap-2"><i class="bi bi-check2 mt-1" style="color:#60a5fa;"></i> Secure communication with your clinic</li>
+                                <li class="d-flex align-items-start gap-2"><i class="bi bi-check2 mt-1" style="color:#60a5fa;"></i> POPIA-compliant data storage</li>
+                            </ul>
+                        </div>
+                        <p style="font-size:0.72rem; color:rgba(255,255,255,0.25);">Nelson Mandela Bay Haematology Diagnostic Laboratories</p>
+                    </div>
+
+                    @* Right form *@
+                    <div class="col-lg-8 p-4">
+                        <h5 class="fw-bold mb-1">Create Patient Account</h5>
+                        <p class="text-muted small mb-4">Fill in your details to register.</p>
+
+                        @if (TempData["Error"] != null)
+                        {
+                            <div data-toast="danger" class="alert alert-danger rounded-0 border-0 border-start border-3 border-danger small mb-3" role="alert">
+                                <i class="bi bi-exclamation-circle me-2"></i>@TempData["Error"]
+                            </div>
+                        }
+
+                        <form id="registerForm" novalidate>
+                            @Html.AntiForgeryToken()
+                            <div id="serverError" class="alert alert-danger rounded-0 border-0 border-start border-3 border-danger small mb-3" style="display:none;" role="alert">
+                                <i class="bi bi-exclamation-circle me-2"></i><span id="serverErrorText"></span>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">First Name(s) <span class="text-danger">*</span></label>
+                                    <input type="text" id="firstName" name="FirstName" class="form-control" placeholder="Enter first name" required>
+                                    <div class="invalid-feedback">First name is required.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Surname <span class="text-danger">*</span></label>
+                                    <input type="text" id="surname" name="Surname" class="form-control" placeholder="Enter surname" required>
+                                    <div class="invalid-feedback">Surname is required.</div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">SA ID Number <span class="text-danger">*</span></label>
+                                    <input type="text" id="idNumber" name="IdNumber" class="form-control" placeholder="YYMMDDSSSSCAZ" maxlength="13" minlength="13" inputmode="numeric" pattern="[0-9]{13}" required oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                                    <div class="invalid-feedback" id="idFeedback">Please enter a valid 13-digit SA ID number.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Date of Birth <span class="text-danger">*</span></label>
+                                    <input type="date" id="dob" name="DateOfBirth" class="form-control bg-light" readonly required>
+                                    <div class="invalid-feedback">Date of birth is required.</div>
+                                    <small class="text-muted d-block mt-1" style="font-size:0.68rem;">Auto-filled from your SA ID number.</small>
+                                    <div id="dobError" class="text-danger mt-1" style="font-size:0.72rem; display:none;"></div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Mobile Number <span class="text-danger">*</span></label>
+                                    <input type="tel" id="mobile" name="Phone" class="form-control" placeholder="0821234567" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" required oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                                    <div class="invalid-feedback">Enter a valid SA mobile number.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Email Address <span class="text-danger">*</span></label>
+                                    <input type="email" id="email" name="Email" class="form-control" placeholder="patient@example.com" required>
+                                    <div class="invalid-feedback">Enter a valid email address.</div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold">Complex / Building Name <span class="text-muted fw-normal">(optional)</span></label>
+                                    <input type="text" id="complexName" name="ComplexName" class="form-control" placeholder="e.g. Sunset Heights, Flat 4B" maxlength="100">
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold">House &amp; Street Address <span class="text-danger">*</span></label>
+                                    <input type="text" id="addressLine1" name="AddressLine1" class="form-control" placeholder="e.g. 12 Kestrel Road" required>
+                                    <div class="invalid-feedback">House and street address is required.</div>
+                                </div>
+                            </div>
+
+                            <partial name="_AddressPicker" model="new Project.Models.AddressPickerModel()" />
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Create Password <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="password" id="regPassword" name="Password" class="form-control" placeholder="Min. 8 characters" required>
+                                        <button class="btn btn-outline-secondary" type="button" id="toggleRegPwd">
+                                            <i class="bi bi-eye-slash"></i>
+                                        </button>
+                                    </div>
+                                    <div id="pwFeedback" class="invalid-feedback d-block" style="display:none !important;"></div>
+                                    @* Live password requirement checklist *@
+                                    <ul class="list-unstyled mt-2 mb-0" id="pwChecklist" style="font-size:0.72rem;">
+                                        <li class="d-flex align-items-center gap-2 mb-1" data-rule="length">
+                                            <i class="bi bi-x-circle-fill text-danger"></i>
+                                            <span class="text-muted">At least 8 characters</span>
+                                        </li>
+                                        <li class="d-flex align-items-center gap-2 mb-1" data-rule="upper">
+                                            <i class="bi bi-x-circle-fill text-danger"></i>
+                                            <span class="text-muted">One uppercase letter</span>
+                                        </li>
+                                        <li class="d-flex align-items-center gap-2 mb-1" data-rule="number">
+                                            <i class="bi bi-x-circle-fill text-danger"></i>
+                                            <span class="text-muted">One number</span>
+                                        </li>
+                                        <li class="d-flex align-items-center gap-2" data-rule="special">
+                                            <i class="bi bi-x-circle-fill text-danger"></i>
+                                            <span class="text-muted">One special character (e.g. !@@#$%)</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Confirm Password <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="password" id="confirmPassword" name="ConfirmPassword" class="form-control" placeholder="Re-enter your password" required>
+                                        <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPwd">
+                                            <i class="bi bi-eye-slash"></i>
+                                        </button>
+                                    </div>
+                                    <div class="invalid-feedback" id="confirmFeedback">Passwords do not match.</div>
+                                    <ul class="list-unstyled mt-1 mb-0" id="matchIndicator" style="font-size:0.72rem; display:none;">
+                                        <li class="d-flex align-items-center gap-2" id="matchIndicatorItem">
+                                            <i class="bi bi-x-circle-fill text-danger"></i>
+                                            <span class="text-muted">Passwords match</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" id="terms" required>
+                                <label class="form-check-label small text-muted" for="terms">
+                                    I consent to the digital processing of my medical data as per the POPI Act.
+                                </label>
+                                <div class="invalid-feedback">You must accept the terms to register.</div>
+                            </div>
+
+                            <button type="submit" class="btn btn-dark w-100 fw-semibold">Register as Patient</button>
+                        </form>
+
+                        <p class="text-center small text-muted mt-3 mb-0">
+                            Already registered? <a asp-controller="Account" asp-action="Login" class="text-dark fw-semibold text-decoration-none">Sign In</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        // Auto-fill Date of Birth from SA ID number (first 6 digits: YYMMDD)
+        const idInputEl = document.getElementById('idNumber');
+        const dobInputEl = document.getElementById('dob');
+        const dobErrorEl = document.getElementById('dobError');
+
+        function updateDobFromId() {
+            const idVal = idInputEl.value;
+            dobErrorEl.style.display = 'none';
+            dobErrorEl.textContent = '';
+
+            if (idVal.length < 6) {
+                dobInputEl.value = '';
+                return;
+            }
+
+            const yy = parseInt(idVal.substring(0, 2), 10);
+            const mm = parseInt(idVal.substring(2, 4), 10);
+            const dd = parseInt(idVal.substring(4, 6), 10);
+
+            // SA ID century rule: assume 2000s unless that would place the
+            // birth year in the future, in which case assume 1900s.
+            const currentYY = new Date().getFullYear() % 100;
+            const fullYear = (yy <= currentYY) ? 2000 + yy : 1900 + yy;
+
+            const candidate = new Date(fullYear, mm - 1, dd);
+            const isValidCalendarDate =
+                mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31 &&
+                candidate.getFullYear() === fullYear &&
+                candidate.getMonth() === mm - 1 &&
+                candidate.getDate() === dd;
+
+            const today = new Date();
+            const age = today.getFullYear() - fullYear;
+
+            if (!isValidCalendarDate) {
+                dobInputEl.value = '';
+                dobErrorEl.textContent = "This doesn't look like a valid SA ID number - please double check it.";
+                dobErrorEl.style.display = 'block';
+                return;
+            }
+
+            if (candidate > today || age > 120) {
+                dobInputEl.value = '';
+                dobErrorEl.textContent = 'The date of birth from this ID number looks incorrect. Please double check your ID number.';
+                dobErrorEl.style.display = 'block';
+                return;
+            }
+
+            const pad = n => n.toString().padStart(2, '0');
+            dobInputEl.value = fullYear + '-' + pad(mm) + '-' + pad(dd);
+        }
+
+        idInputEl.addEventListener('input', updateDobFromId);
+
+        // Toggle password visibility
+        function togglePwd(btnId, inputId) {
+            document.getElementById(btnId).addEventListener('click', function () {
+                const input = document.getElementById(inputId);
+                const icon = this.querySelector('i');
+                input.type = input.type === 'password' ? 'text' : 'password';
+                icon.className = input.type === 'text' ? 'bi bi-eye' : 'bi bi-eye-slash';
+            });
+        }
+        togglePwd('toggleRegPwd', 'regPassword');
+        togglePwd('toggleConfirmPwd', 'confirmPassword');
+
+        // Live password requirement checklist
+        const pwInput = document.getElementById('regPassword');
+
+        function updatePasswordChecklist(pw) {
+            const rules = {
+                length: pw.length >= 8,
+                upper: /[A-Z]/.test(pw),
+                number: /[0-9]/.test(pw),
+                special: /[^A-Za-z0-9]/.test(pw)
+            };
+            Object.keys(rules).forEach(function (key) {
+                const li = document.querySelector('#pwChecklist [data-rule="' + key + '"]');
+                if (!li) return;
+                const icon = li.querySelector('i');
+                const label = li.querySelector('span');
+                if (rules[key]) {
+                    icon.className = 'bi bi-check-circle-fill text-success';
+                    label.classList.remove('text-muted');
+                    label.classList.add('text-success');
+                } else {
+                    icon.className = 'bi bi-x-circle-fill text-danger';
+                    label.classList.remove('text-success');
+                    label.classList.add('text-muted');
+                }
+            });
+        }
+
+        pwInput.addEventListener('input', function () {
+            updatePasswordChecklist(this.value);
+            checkMatch();
+        });
+
+        // Confirm password match
+        const confirmInput     = document.getElementById('confirmPassword');
+        const matchIndicator   = document.getElementById('matchIndicator');
+        const confirmFeedback  = document.getElementById('confirmFeedback');
+
+        function checkMatch() {
+            const pw = pwInput.value;
+            const cp = confirmInput.value;
+            const icon = document.querySelector('#matchIndicatorItem i');
+            const label = document.querySelector('#matchIndicatorItem span');
+            if (!cp) { matchIndicator.style.display = 'none'; return; }
+            matchIndicator.style.display = 'block';
+            if (pw === cp) {
+                icon.className = 'bi bi-check-circle-fill text-success';
+                label.classList.remove('text-muted');
+                label.classList.add('text-success');
+                confirmInput.classList.remove('is-invalid');
+                confirmInput.classList.add('is-valid');
+            } else {
+                icon.className = 'bi bi-x-circle-fill text-danger';
+                label.classList.remove('text-success');
+                label.classList.add('text-muted');
+                confirmInput.classList.add('is-invalid');
+                confirmInput.classList.remove('is-valid');
+            }
+        }
+        confirmInput.addEventListener('input', checkMatch);
+
+        // Form submit validation
+        document.getElementById('registerForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            let valid = true;
+
+            // Required fields
+            ['firstName','surname','idNumber','dob','addressLine1','suburb','city','postalCode','mobile','email'].forEach(function (id) {
+                const el = document.getElementById(id);
+                if (!el.value.trim()) { el.classList.add('is-invalid'); valid = false; }
+                else el.classList.remove('is-invalid');
+            });
+
+            // Email: real format with a domain and a top-level domain (a@b is not accepted)
+            const emailEl = document.getElementById('email');
+            const emailVal = emailEl.value.trim();
+            if (emailVal && !/^[A-Za-z0-9._%+\-]+@@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}$/.test(emailVal)) {
+                emailEl.classList.add('is-invalid');
+                emailEl.nextElementSibling.textContent = 'Enter a valid email address, for example name@example.com.';
+                valid = false;
+            }
+
+            // SA ID: exactly 13 digits, numbers only
+            const idEl = document.getElementById('idNumber');
+            const idVal = idEl.value.trim();
+            if (!/^[0-9]{13}$/.test(idVal)) {
+                idEl.classList.add('is-invalid');
+                document.getElementById('idFeedback').textContent =
+                    idVal.length === 0 ? 'SA ID number is required.' :
+                    /[^0-9]/.test(idVal) ? 'SA ID must contain numbers only - no letters or spaces.' :
+                    idVal.length < 13 ? 'SA ID must be exactly 13 digits (' + idVal.length + ' entered).' :
+                    'SA ID must be exactly 13 digits (' + idVal.length + ' entered).';
+                valid = false;
+            } else {
+                idEl.classList.remove('is-invalid');
+                idEl.classList.add('is-valid');
+            }
+
+            // Phone: exactly 10 digits, numbers only
+            const phoneEl = document.getElementById('mobile');
+            const phoneVal = phoneEl.value.trim();
+            if (!/^[0-9]{10}$/.test(phoneVal)) {
+                phoneEl.classList.add('is-invalid');
+                phoneEl.nextElementSibling.textContent =
+                    phoneVal.length === 0 ? 'Phone number is required.' :
+                    /[^0-9]/.test(phoneVal) ? 'Phone number must contain numbers only - no spaces or dashes.' :
+                    phoneVal.length < 10 ? 'Phone number must be exactly 10 digits (' + phoneVal.length + ' entered).' :
+                    'Phone number must be exactly 10 digits (' + phoneVal.length + ' entered).';
+                valid = false;
+            } else {
+                phoneEl.classList.remove('is-invalid');
+                phoneEl.classList.add('is-valid');
+            }
+
+            // Postal code: exactly 4 digits, numbers only
+            const postalEl = document.getElementById('postalCode');
+            const postalVal = postalEl.value.trim();
+            if (!/^[0-9]{4}$/.test(postalVal)) {
+                postalEl.classList.add('is-invalid');
+                document.getElementById('postalCodeFeedback').textContent =
+                    postalVal.length === 0 ? 'Postal code is required.' :
+                    'Postal code must be exactly 4 digits (' + postalVal.length + ' entered).';
+                valid = false;
+            } else {
+                postalEl.classList.remove('is-invalid');
+                postalEl.classList.add('is-valid');
+            }
+
+            // Password strength
+            const pw = pwInput.value;
+            const pwFb = document.getElementById('pwFeedback');
+            if (pw.length < 8 || !/[A-Z]/.test(pw) || !/[0-9]/.test(pw) || !/[^A-Za-z0-9]/.test(pw)) {
+                pwInput.classList.add('is-invalid');
+                pwFb.textContent = 'Password must be 8+ characters with uppercase, number, and special character.';
+                pwFb.style.display = 'block';
+                valid = false;
+            } else {
+                pwInput.classList.remove('is-invalid');
+                pwFb.style.display = 'none';
+            }
+
+            // Confirm password
+            if (pwInput.value !== confirmInput.value) {
+                confirmInput.classList.add('is-invalid');
+                valid = false;
+            }
+
+            // Terms
+            const terms = document.getElementById('terms');
+            if (!terms.checked) { terms.classList.add('is-invalid'); valid = false; }
+            else terms.classList.remove('is-invalid');
+
+            if (!valid) return;
+
+            const serverError = document.getElementById('serverError');
+            const serverErrorText = document.getElementById('serverErrorText');
+            serverError.style.display = 'none';
+
+            const submitBtn = document.querySelector('#registerForm button[type="submit"]');
+            const originalBtnText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating your account...';
+
+            fetch('@Url.Action("Register", "Account")', {
+                method: 'POST',
+                body: new FormData(document.getElementById('registerForm'))
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        HemaUI.toast({ message: 'Account created! Taking you to the login page...', type: 'success', duration: 2500 });
+                        setTimeout(function () { window.location.href = '@Url.Action("Login", "Account")'; }, 2500);
+                    } else {
+                        HemaUI.toast({ message: data.message || 'Something went wrong. Please try again.', type: 'danger' });
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalBtnText;
+                    }
+                })
+                .catch(function () {
+                    HemaUI.toast({ message: 'Could not reach the server. Please check your connection and try again.', type: 'danger' });
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalBtnText;
+                });
+        });
+    })();
+</script>

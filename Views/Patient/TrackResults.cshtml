@@ -1,0 +1,268 @@
+@model Project.Models.TrackResultsViewModel
+@{
+    Layout = "_PatientLayout";
+    ViewData["Title"] = "Track Results | Hema Flow";
+
+    var changeSign = Model.ChangePercent >= 0 ? "+" : "";
+    var changeColor = Model.ChangePercent <= 0 ? "success" : "danger";
+    var changeIcon = Model.ChangePercent <= 0 ? "bi-arrow-down-short" : "bi-arrow-up-short";
+    bool isAboveRange = Model.LatestValue > Model.NormalRangeMax && Model.NormalRangeMax > 0;
+
+    // Serialise for JS - done in the @section below via @Html.Raw
+    var labelsJson = System.Text.Json.JsonSerializer.Serialize(Model.DataPoints.Select(d => d.Label).ToList());
+    var valuesJson = System.Text.Json.JsonSerializer.Serialize(Model.DataPoints.Select(d => (double)d.Value).ToList());
+}
+
+<div class="row align-items-center mb-4 g-3">
+    <div class="col-md-7">
+        <h4 class="fw-700 mb-1" style="color: #0f172a;">Track Test Results</h4>
+        <p class="text-muted small mb-0">Monitor how your test values change over time.</p>
+    </div>
+</div>
+
+@* ── Filters ── *@
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-sliders2-vertical text-primary me-2"></i>Filter Options
+    </div>
+    <div class="p-3">
+        <form method="get" asp-action="TrackResults" asp-controller="Patient" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Test Type</label>
+                <select name="selectedTest" class="form-select bg-light border-0 rounded-0 shadow-none py-2 small">
+                    @foreach (var t in Model.AvailableTests)
+                    {
+                        if (t == Model.SelectedTest)
+                        {
+                            <option value="@t" selected>@t</option>
+                        }
+                        else
+                        {
+                            <option value="@t">@t</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">From Date</label>
+                <input type="date" name="fromDate" value="@ViewBag.FromDate" max="@ViewBag.Today" class="form-control bg-light border-0 rounded-0 shadow-none small py-2">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">To Date</label>
+                <input type="date" name="toDate" value="@ViewBag.ToDate" max="@ViewBag.Today" class="form-control bg-light border-0 rounded-0 shadow-none small py-2">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-dark w-100 py-2">
+                    <i class="bi bi-search me-1"></i>Apply
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!Model.DataPoints.Any())
+{
+    <div class="card mb-4"><div class="p-5 text-center text-muted">
+        <i class="bi bi-graph-up fs-2 d-block mb-2"></i>
+        @if (ViewBag.HasAnyResults == true) { <span>No results for @Model.SelectedTest in that date range.</span> }
+        else { <span>You have no released results to track yet. They appear here once a doctor releases them.</span> }
+    </div></div>
+}
+else
+{
+@* ── Chart ── *@
+<div class="card mb-4">
+    <div class="card-header justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-graph-up-arrow text-primary"></i>
+            <span>@Model.SelectedTest - Trend</span>
+        </div>
+        <span class="text-muted x-small">Unit: @Model.Unit</span>
+    </div>
+    <div class="p-3">
+        <div style="height: 320px; position: relative;">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+</div>
+
+@* ── Summary Cards ── *@
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card p-3 mb-0">
+            <small class="text-uppercase text-muted fw-600 d-block mb-1" style="font-size: 0.65rem; letter-spacing: 0.05em;">Latest Result</small>
+            <div class="d-flex align-items-baseline gap-2">
+                <span class="fs-4 fw-700 text-dark">@Model.LatestValue</span>
+                <span class="text-muted small">@Model.Unit</span>
+                <span class="ms-auto text-@changeColor small fw-600">
+                    <i class="bi @changeIcon"></i> @changeSign@Model.ChangePercent%
+                </span>
+            </div>
+            @if (Model.NormalRangeMax > 0)
+            {
+                <div class="text-muted x-small mt-2 pt-2 border-top">
+                    Normal range: @Html.Raw(Model.NormalRangeMin > 0 ? Model.NormalRangeMin + " - " : "&lt; ")@Model.NormalRangeMax @Model.Unit
+                    @if (isAboveRange)
+                    {
+                        <span class="text-danger fw-600 ms-1"><i class="bi bi-exclamation-circle"></i> Above normal</span>
+                    }
+                    else
+                    {
+                        <span class="text-success fw-600 ms-1"><i class="bi bi-check-circle"></i> Within range</span>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 mb-0">
+            <small class="text-uppercase text-muted fw-600 d-block mb-1" style="font-size: 0.65rem; letter-spacing: 0.05em;">Data Points</small>
+            <div class="d-flex align-items-baseline gap-2">
+                <span class="fs-4 fw-700 text-dark">@Model.DataPoints.Count</span>
+                <span class="text-muted small">readings</span>
+            </div>
+            <div class="text-muted x-small mt-2 pt-2 border-top">
+                @if (Model.DataPoints.Any())
+                {
+                    @:From @Model.DataPoints.First().Label to @Model.DataPoints.Last().Label
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 mb-0">
+            <small class="text-uppercase text-muted fw-600 d-block mb-1" style="font-size: 0.65rem; letter-spacing: 0.05em;">Highest Recorded</small>
+            <div class="d-flex align-items-baseline gap-2">
+                @if (Model.DataPoints.Any())
+                {
+                    <span class="fs-4 fw-700 text-dark">@Model.DataPoints.Max(d => d.Value)</span>
+                    <span class="text-muted small">@Model.Unit</span>
+                }
+            </div>
+            <div class="text-muted x-small mt-2 pt-2 border-top">Peak value in selected period</div>
+        </div>
+    </div>
+</div>
+
+}
+
+@section Scripts {
+    <script src="~/lib/chartjs/chart.umd.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Defensive fallbacks to prevent empty values from generating syntax errors
+            const labels    = @Html.Raw(labelsJson) || [];
+            const values    = @Html.Raw(valuesJson) || [];
+            const normalMax = Number('@Model.NormalRangeMax.ToString(System.Globalization.CultureInfo.InvariantCulture)') || 0;
+            const normalMin = Number('@Model.NormalRangeMin.ToString(System.Globalization.CultureInfo.InvariantCulture)') || 0;
+            const unit      = '@Html.Raw(Model.Unit ?? "")';
+
+            const canvas = document.getElementById('trendChart');
+            if (!canvas) return;
+
+            const ctx  = canvas.getContext('2d');
+            const grad = ctx.createLinearGradient(0, 0, 0, 300);
+            grad.addColorStop(0, 'rgba(59,130,246,0.10)');
+            grad.addColorStop(1, 'rgba(59,130,246,0.00)');
+
+            const datasets = [{
+                label: '@Html.Raw(Model.SelectedTest ?? "Test Trend")',
+                data: values,
+                borderColor: '#3b82f6',
+                borderWidth: 2.5,
+                backgroundColor: grad,
+                fill: true,
+                tension: 0.35,
+                pointRadius: 5,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#3b82f6',
+                pointBorderWidth: 2
+            }];
+
+            // Reference lines: normal minimum (green) and normal maximum (red - above it is abnormal),
+            // with a light green band between them so the healthy range is easy to see.
+            if (normalMin > 0) {
+                datasets.push({
+                    label: 'Normal minimum: ' + normalMin + ' ' + unit,
+                    data: labels.map(() => normalMin),
+                    borderColor: '#16a34a',
+                    backgroundColor: 'rgba(22,163,74,0.09)',
+                    borderWidth: 2.5,
+                    borderDash: [10, 6],
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    fill: normalMax > 0 ? '+1' : false,
+                    tension: 0
+                });
+            }
+            if (normalMax > 0) {
+                datasets.push({
+                    label: 'Abnormal above: ' + normalMax + ' ' + unit,
+                    data: labels.map(() => normalMax),
+                    borderColor: '#dc2626',
+                    borderWidth: 2.5,
+                    borderDash: [10, 6],
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    fill: false,
+                    tension: 0
+                });
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                boxWidth: 34,
+                                boxHeight: 8,
+                                padding: 22,
+                                font: { family: 'Inter', size: 12, weight: '500' },
+                                color: '#334155',
+                                // line swatches that look exactly like the lines on the chart
+                                generateLabels: function (chart) {
+                                    return chart.data.datasets.map(function (ds, i) {
+                                        const isLine = Array.isArray(ds.borderDash);
+                                        return {
+                                            text: ds.label,
+                                            fillStyle: isLine ? ds.borderColor : '#ffffff',
+                                            strokeStyle: ds.borderColor,
+                                            lineWidth: isLine ? 3 : 2.5,
+                                            lineDash: isLine ? ds.borderDash : [],
+                                            pointStyle: isLine ? 'line' : 'circle',
+                                            hidden: !chart.isDatasetVisible(i),
+                                            datasetIndex: i
+                                        };
+                                    });
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(item) { return ' ' + item.parsed.y + ' ' + unit; }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: '#e2e8f0' },
+                            ticks: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}
+

@@ -1,0 +1,245 @@
+@model Project.Models.Entities.DoctorProfile
+@{
+    var sec = ViewBag.Security as Project.Models.Doctor.DoctorSecurityViewModel ?? new Project.Models.Doctor.DoctorSecurityViewModel();
+}
+@{
+    Layout = "_DoctorLayout";
+    ViewData["Title"] = "My Profile";
+}
+
+<div class="mb-4">
+    <h4 class="fw-700 mb-0" style="color: #0f172a;">Dr. @Model.User?.FirstName @Model.User?.Surname</h4>
+    <p class="text-muted mb-0">Medical Doctor &bull; @Model.DoctorCode &bull; HPCSA: @Model.HpcsaNumber</p>
+</div>
+
+<div class="glass-card p-4 mb-4">
+    <div class="d-flex flex-wrap gap-2">
+        <span class="badge bg-light text-dark border rounded-3 px-3"><i class="bi bi-person-badge text-primary me-1"></i>System Role: Doctor</span>
+        @if (sec.TwoFactorEnabled)
+        {
+            <span class="badge bg-light text-dark border px-3"><i class="bi bi-shield-check text-success me-1"></i>2FA Enabled</span>
+        }
+        else
+        {
+            <span class="badge bg-light text-dark border px-3"><i class="bi bi-shield-x text-danger me-1"></i>2FA Off</span>
+        }
+    </div>
+</div>
+
+<div class="row g-4">
+
+    <!-- Left: Personal info -->
+    <div class="col-md-6">
+        <div class="glass-card p-4 h-100">
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">Personal Information</h6>
+            <form asp-controller="Doctor" asp-action="Profile" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-uppercase">First Name</label>
+                        <input type="text" name="firstName" class="form-control" value="@Model.User?.FirstName" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-uppercase">Last Name</label>
+                        <input type="text" name="lastName" class="form-control" value="@Model.User?.Surname" />
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-uppercase">
+                        Work Email <span class="text-muted fw-normal" style="text-transform:none;">(not editable)</span>
+                    </label>
+                    <div class="form-control bg-light border text-muted d-flex align-items-center gap-2">
+                        <i class="bi bi-lock-fill"></i>@Model.User?.Email
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-uppercase">Phone</label>
+                    <input type="tel" name="phone" class="form-control" value="@Model.User?.Phone" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-uppercase">Doctor Code</label>
+                    <div class="form-control bg-light border text-muted d-flex align-items-center gap-2">
+                        <i class="bi bi-lock-fill"></i>@Model.DoctorCode
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-uppercase">HPCSA Number</label>
+                    <div class="form-control bg-light border text-muted d-flex align-items-center gap-2">
+                        <i class="bi bi-lock-fill"></i>@Model.HpcsaNumber
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-uppercase">System Role</label>
+                    <div class="form-control bg-light border text-muted d-flex align-items-center gap-2">
+                        <i class="bi bi-lock-fill"></i>Doctor
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn text-white px-4 py-2 rounded-3 shadow-sm save-changes-btn"
+                            style="background-color: #10b981; border: none; transition: background-color 0.2s ease;">
+                        <i class="bi bi-check-lg me-1"></i> Save Changes
+                    </button>
+                </div>
+
+                <style>
+                    .save-changes-btn:hover {
+                        background-color: #059669 !important;
+                    }
+                </style>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Right: Security -->
+    <div class="col-md-6">
+
+        <!-- Password -->
+        <div class="glass-card p-4 mb-4">
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">Password</h6>
+            <form asp-controller="Doctor" asp-action="Profile" method="post">
+                @Html.AntiForgeryToken()
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-uppercase">Current Password</label>
+                    <input type="password" name="currentPassword" class="form-control" placeholder="Enter current password" />
+                </div>
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-uppercase">New Password</label>
+                    <input type="password" name="newPassword" class="form-control" placeholder="Min. 8 characters, with a capital, number and symbol" />
+                </div>
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-uppercase">Confirm New Password</label>
+                    <input type="password" name="confirmPassword" class="form-control" placeholder="Repeat new password" />
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-dark rounded-3 px-4">
+                        <i class="bi bi-arrow-repeat me-1"></i>Update Password
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 2FA -->
+        <div class="glass-card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="text-muted text-uppercase fw-bold small mb-0">Two-Factor Authentication</h6>
+                @if (sec.TwoFactorEnabled)
+                {
+                    <span class="badge bg-success-subtle text-success px-3"><i class="bi bi-check-circle-fill me-1"></i>Enabled</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary-subtle text-secondary px-3"><i class="bi bi-x-circle-fill me-1"></i>Not enabled</span>
+                }
+            </div>
+            <div class="d-flex align-items-start gap-3 mb-3">
+                <div style="width:40px;height:40px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem;">📱</div>
+                <div>
+                    <div class="fw-medium small">Authenticator App</div>
+                    <div class="text-muted" style="font-size:0.72rem;">
+                        Google Authenticator or Microsoft Authenticator
+                        @if (sec.TwoFactorEnabled)
+                        {
+                            <br />@:Last verified: @(sec.TwoFactorLastVerified?.ToString("dd MMM yyyy, HH:mm") ?? "-") &bull; @sec.BackupCodesLeft backup codes left
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                @if (sec.TwoFactorEnabled)
+                {
+                    <form asp-controller="Doctor" asp-action="RegenerateBackupCodes" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-dark btn-sm px-3"><i class="bi bi-key me-1"></i>New Backup Codes</button>
+                    </form>
+                    <button type="button" class="btn btn-outline-danger btn-sm px-3" data-bs-toggle="modal" data-bs-target="#disable2FAModal">Disable 2FA</button>
+                }
+                else
+                {
+                    <a asp-controller="Doctor" asp-action="Setup2FA" class="btn btn-dark btn-sm px-3"><i class="bi bi-shield-plus me-1"></i>Set Up 2FA</a>
+                }
+            </div>
+        </div>
+
+
+    </div>
+</div>
+
+
+<!-- Disable 2FA Modal -->
+<div class="modal fade" id="disable2FAModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="border-radius:0; border:1px solid #e1e1e1;">
+            <form asp-controller="Doctor" asp-action="DisableTwoFactor" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <div class="text-center mb-3"><i class="bi bi-shield-exclamation text-danger" style="font-size:2rem;"></i></div>
+                    <p class="fw-semibold mb-1 text-center">Disable Two-Factor Authentication?</p>
+                    <p class="text-muted small text-center mb-3">This will reduce the security of your account. Enter your password to confirm.</p>
+                    <input type="password" name="password" class="form-control mb-3" placeholder="Enter your password to confirm" required autocomplete="current-password">
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-dark btn-sm flex-grow-1" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger btn-sm flex-grow-1">Disable</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@if (sec.NewBackupCodes.Any())
+{
+<!-- Backup Codes Modal (shown once, right after generation) -->
+<div class="modal fade" id="backupCodesModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius:0; border:1px solid #e1e1e1;">
+            <div class="modal-header border-bottom" style="padding:1.5rem 1.75rem;">
+                <div>
+                    <h6 class="modal-title fw-bold mb-1"><i class="bi bi-key-fill me-2"></i>Your Backup Codes</h6>
+                    <p class="text-muted small mb-0">Save these now. they are shown only once and each works a single time.</p>
+                </div>
+            </div>
+            <div class="modal-body" style="padding:1.75rem;">
+                <div class="row g-2 mb-3">
+                    @foreach (var code in sec.NewBackupCodes)
+                    {
+                        <div class="col-6 col-md-4">
+                            <div class="backup-code" style="font-family:'Courier New',monospace; font-size:0.88rem; font-weight:700; background:#f8fafc; border:1px solid #e2e8f0; padding:0.55rem 0.75rem; text-align:center; letter-spacing:0.08em;">@code</div>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="modal-footer border-top" style="padding:1rem 1.75rem;">
+                <button type="button" id="copyCodesBtn" class="btn btn-outline-dark px-4"><i class="bi bi-clipboard me-1"></i>Copy All</button>
+                <button type="button" class="btn btn-dark px-4" data-bs-dismiss="modal">I've saved them</button>
+            </div>
+        </div>
+    </div>
+</div>
+}
+
+@section Scripts {
+@if (sec.NewBackupCodes.Any())
+{
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var el = document.getElementById('backupCodesModal');
+        new bootstrap.Modal(el).show();
+        document.getElementById('copyCodesBtn').addEventListener('click', function () {
+            var codes = Array.from(el.querySelectorAll('.backup-code')).map(function (c) { return c.textContent.trim(); });
+            var btn = this;
+            navigator.clipboard.writeText(codes.join('\n')).then(function () {
+                btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Copied';
+            });
+        });
+    });
+</script>
+}
+}

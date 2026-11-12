@@ -1,0 +1,790 @@
+@{
+    ViewData["Title"] = "Home";
+}
+
+<style>
+    html {
+        scroll-behavior: smooth;
+    }
+
+    :root {
+        --hema-navy: #0f172a;
+        --hema-navy-2: #1e293b;
+        --hema-blue: #3b82f6;
+        --hema-teal: #0d9488;
+        --hema-crimson: #e11d48;
+        --hema-slate: #64748b;
+        --hema-offwhite: #f8fafc;
+    }
+
+    /* ── Hero (dark) ── */
+    .hero-wrap {
+        background: var(--hema-navy);
+        padding: 110px 0 0;
+        overflow: hidden;
+        position: relative;
+    }
+
+        .hero-wrap::before {
+            content: "";
+            position: absolute;
+            width: 620px;
+            height: 620px;
+            background: radial-gradient(circle, rgba(59,130,246,0.16) 0%, transparent 70%);
+            top: -220px;
+            right: -160px;
+            pointer-events: none;
+        }
+
+    .hero-tag {
+        letter-spacing: 3px;
+        font-size: 0.72rem;
+        color: #94a3b8;
+        font-weight: 600;
+    }
+
+    .hero-heading {
+        font-size: 4rem;
+        font-weight: 800;
+        line-height: 1.06;
+        margin-bottom: 1.4rem;
+        color: #fff;
+        letter-spacing: -0.01em;
+    }
+
+    .hero-body {
+        padding-bottom: 70px;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* ── Status ribbon (bottom of hero) ── */
+    .status-ribbon {
+        background: rgba(255,255,255,0.03);
+        border-top: 1px solid rgba(255,255,255,0.08);
+        padding: 22px 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .status-item {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        color: rgba(255,255,255,0.65);
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+        .status-item i {
+            font-size: 1rem;
+        }
+
+    /* Logo card in the hero */
+    .hero-logo-card {
+        background: #fff;
+        border-radius: 24px;
+        box-shadow: 0 40px 80px -20px rgba(0,0,0,0.5);
+        max-width: 420px;
+        margin-left: auto;
+        padding: 1rem;
+    }
+
+    .hero-logo-card img {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 16px;
+    }
+
+    /* ── UI preview mockup (no longer used in the hero) ── */
+    .ui-preview-wrap {
+        position: relative;
+        z-index: 1;
+    }
+
+    .ui-preview-card {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 40px 80px -20px rgba(0,0,0,0.5);
+        overflow: hidden;
+        max-width: 440px;
+        margin-left: auto;
+        transform: rotate(0.3deg);
+    }
+
+    .ui-preview-topbar {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.7rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        background: #f8fafc;
+    }
+
+    .ui-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    .ui-preview-url {
+        margin-left: 0.5rem;
+        font-size: 0.68rem;
+        color: #94a3b8;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 50rem;
+        padding: 0.1rem 0.75rem;
+        flex: 1;
+    }
+
+    .ui-preview-body {
+        padding: 1.1rem 1.25rem 1.3rem;
+    }
+
+    .ui-preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.85rem;
+    }
+
+    .ui-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.55rem 0;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.8rem;
+    }
+
+        .ui-row:last-of-type {
+            border-bottom: none;
+        }
+
+    .ui-pill {
+        font-size: 0.64rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        padding: 0.2rem 0.55rem;
+        border-radius: 50rem;
+    }
+
+    .ui-pill-green { background: #d1fae5; color: #059669; }
+    .ui-pill-amber { background: #fef3c7; color: #b45309; }
+    .ui-pill-slate { background: #f1f5f9; color: #64748b; }
+
+    .ui-trend {
+        display: flex;
+        align-items: flex-end;
+        gap: 5px;
+        height: 42px;
+        margin-top: 0.9rem;
+    }
+
+    .ui-trend span {
+        flex: 1;
+        background: linear-gradient(180deg, var(--hema-blue), rgba(59,130,246,0.25));
+        border-radius: 3px 3px 0 0;
+    }
+
+    .float-chip {
+        position: absolute;
+        background: #fff;
+        border-radius: 50rem;
+        box-shadow: 0 14px 28px rgba(15,23,42,0.18);
+        padding: 0.5rem 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--hema-navy);
+        z-index: 2;
+        animation: chipFloat 5s ease-in-out infinite;
+    }
+
+    .chip-verified {
+        top: -18px;
+        right: 8%;
+    }
+
+    .chip-batch {
+        bottom: -16px;
+        left: 2%;
+        animation-delay: 1.2s;
+    }
+
+    @@keyframes chipFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+    }
+
+    /* ── How It Works (light) ── */
+    .how-section {
+        padding: 96px 0;
+        background: #fff;
+    }
+
+    .step-card {
+        background: #fff;
+        border: 1px solid #f1f5f9;
+        border-radius: 20px;
+        padding: 1.5rem;
+        height: 100%;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        transition: all 0.35s cubic-bezier(0.2,1,0.3,1);
+    }
+
+        .step-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 28px rgba(15,23,42,0.08);
+            border-color: var(--hema-teal);
+        }
+
+    .step-icon-box {
+        width: 42px;
+        height: 42px;
+        background: #f0fdfa;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        color: var(--hema-teal);
+        flex-shrink: 0;
+    }
+
+    /* ── Core capabilities (dark glass bento) ── */
+    .capabilities-section {
+        padding: 96px 0;
+        background: var(--hema-navy);
+        background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0);
+        background-size: 26px 26px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .capabilities-section::before {
+            content: "";
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            background: radial-gradient(circle, rgba(13,148,136,0.16) 0%, transparent 70%);
+            bottom: -220px;
+            left: -140px;
+        }
+
+    .custom-card {
+        background: rgba(30, 41, 59, 0.6);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        transition: all 0.3s ease;
+        height: 100%;
+        padding: 1.75rem;
+        position: relative;
+        z-index: 1;
+    }
+
+        .custom-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 20px 40px -14px rgba(0, 0, 0, 0.55);
+        }
+
+    .icon-badge {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        background: rgba(59, 130, 246, 0.12);
+        color: #60a5fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .micro-badge {
+        font-size: 0.62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 0.25rem 0.6rem;
+        border-radius: 50rem;
+        background: rgba(59,130,246,0.12);
+        color: #93c5fd;
+        border: 1px solid rgba(59,130,246,0.25);
+    }
+
+    .mini-visual {
+        margin-top: 1.1rem;
+        padding-top: 1.1rem;
+        border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .mini-tracker {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .mini-tracker-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        flex-shrink: 0;
+    }
+
+        .mini-tracker-dot.active {
+            background: var(--hema-blue);
+            box-shadow: 0 0 0 4px rgba(59,130,246,0.18);
+        }
+
+    .mini-tracker-line {
+        flex: 1;
+        height: 2px;
+        background: rgba(255,255,255,0.12);
+    }
+
+    .mini-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 50rem;
+        padding: 0.3rem 0.7rem;
+        font-size: 0.76rem;
+        color: rgba(255,255,255,0.75);
+    }
+
+    /* ── FAQ (centered, light) ── */
+    .faq-section {
+        padding: 96px 0;
+        background: var(--hema-offwhite);
+    }
+
+    .faq-accordion .accordion-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 16px !important;
+        overflow: hidden;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    }
+
+    .faq-accordion .accordion-button {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--hema-navy);
+        padding: 1.1rem 1.4rem;
+        background: #fff;
+    }
+
+        .faq-accordion .accordion-button:not(.collapsed) {
+            background: #f0fdfa;
+            color: var(--hema-teal);
+            box-shadow: none;
+        }
+
+        .faq-accordion .accordion-button:focus {
+            box-shadow: none;
+            border-color: transparent;
+        }
+
+    .faq-accordion .accordion-body {
+        font-size: 0.88rem;
+        color: #475569;
+        line-height: 1.7;
+        padding: 0 1.4rem 1.25rem;
+        background: #fff;
+    }
+
+    /* ── CTA ── */
+    .cta-card {
+        border-radius: 28px;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        padding: 3.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .cta-card::after {
+            content: "";
+            position: absolute;
+            width: 380px;
+            height: 380px;
+            background: radial-gradient(circle, rgba(13,148,136,0.2) 0%, transparent 70%);
+            bottom: -180px;
+            left: -100px;
+        }
+
+    /* ── Back to top ── */
+    .back-to-top {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: var(--hema-navy);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        border: none;
+        box-shadow: 0 10px 24px rgba(15,23,42,0.25);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(12px);
+        transition: opacity 0.25s ease, transform 0.25s ease, background 0.2s ease;
+        z-index: 1050;
+    }
+
+        .back-to-top.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .back-to-top:hover {
+            background: var(--hema-teal);
+        }
+</style>
+
+@* ── 1. HERO ── *@
+<section class="hero-wrap">
+    <div class="container hero-body">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <span class="hero-tag text-uppercase">Nelson Mandela Bay Health District</span>
+                <h1 class="hero-heading mt-3">
+                    Flow.<br />
+                    Track.<br />
+                    <span style="color:#2dd4bf">Deliver.</span>
+                </h1>
+                <p class="mb-4 pe-lg-4" style="max-width:460px; font-size:1.02rem; line-height:1.7; color:#cbd5e1;">
+                    Real-time sample tracking, doctor-verified results, and secure patient access, built for the NMBHDL haematology network.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-light rounded-pill px-4 py-2 fw-600">
+                        <i class="bi bi-person-plus me-2"></i>Get Started
+                    </a>
+                    <a href="#how" class="btn btn-outline-light rounded-pill px-4 py-2">See How It Works</a>
+                </div>
+            </div>
+
+            <div class="col-lg-6 d-none d-lg-block">
+                <div class="hero-logo-card">
+                    <img src="~/images/logo.png" alt="HemaFlow logo: Flow, Track, Deliver" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-ribbon">
+        <div class="container">
+            <div class="row g-3">
+                <div class="col-6 col-md-3">
+                    <div class="status-item"><i class="bi bi-clipboard2-check text-success"></i>100% Audit-Logged Actions</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="status-item"><i class="bi bi-activity text-primary"></i>Real-Time Sample Tracking</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="status-item"><i class="bi bi-shield-lock text-warning"></i>POPIA-Compliant Handling</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="status-item"><i class="bi bi-patch-check text-info"></i>Doctor-Verified Results Only</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* ── 2. HOW IT WORKS ── *@
+<section id="how" class="how-section">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-lg-7">
+                <h2 class="fw-bold fs-3 mb-2">How It Works</h2>
+                <p class="text-muted mb-0" style="font-size:0.95rem;">Three simple steps. Built for the clinical environment.</p>
+            </div>
+        </div>
+        <div class="row g-4 align-items-stretch">
+            <div class="col-lg-5">
+                <div style="border-radius:20px; overflow:hidden; height:100%; min-height:320px; background:#f2fbf8; box-shadow:0 20px 40px rgba(15,23,42,0.08);">
+                    <img src="~/images/connected-healthcare.jpg" alt="Connected healthcare: patient, laboratory and results"
+                         style="width:100%; height:100%; object-fit:cover; object-position:center; display:block;">
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="step-card">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="step-icon-box flex-shrink-0 mb-0"><i class="bi bi-person-plus"></i></div>
+                                <div>
+                                    <span class="text-muted fw-700 me-2" style="font-size:1.2rem; color:#e2e8f0;">01</span>
+                                    <h6 class="fw-bold d-inline mb-1">Register &amp; Onboard</h6>
+                                    <p class="text-muted mb-0 mt-1" style="font-size:0.88rem; line-height:1.65;">Create your profile once. Your medical history and consent settings are securely stored for all future diagnostic requests.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="step-card">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="step-icon-box flex-shrink-0 mb-0"><i class="bi bi-droplet-fill"></i></div>
+                                <div>
+                                    <span class="text-muted fw-700 me-2" style="font-size:1.2rem; color:#e2e8f0;">02</span>
+                                    <h6 class="fw-bold d-inline mb-1">Track Your Sample</h6>
+                                    <p class="text-muted mb-0 mt-1" style="font-size:0.88rem; line-height:1.65;">Watch your sample move through the lab in real time, from collection to processing to result verification.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="step-card">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="step-icon-box flex-shrink-0 mb-0"><i class="bi bi-graph-up-arrow"></i></div>
+                                <div>
+                                    <span class="text-muted fw-700 me-2" style="font-size:1.2rem; color:#e2e8f0;">03</span>
+                                    <h6 class="fw-bold d-inline mb-1">View Your Results</h6>
+                                    <p class="text-muted mb-0 mt-1" style="font-size:0.88rem; line-height:1.65;">Access verified results through interactive trend charts and download branded PDF reports, shared securely with your doctor.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* ── 3. CORE CAPABILITIES (dark glass bento) ── *@
+<section class="capabilities-section">
+    <div class="container position-relative" style="z-index:1;">
+        <div class="row mb-4">
+            <div class="col-lg-7">
+                <h2 class="fw-bold fs-3 mb-2 text-white">Core Capabilities</h2>
+                <p class="mb-0" style="font-size:0.95rem; color:#94a3b8;">Everything a sample needs on its journey from collection to a verified result.</p>
+            </div>
+        </div>
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="custom-card">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="icon-badge"><i class="bi bi-activity"></i></div>
+                        <span class="micro-badge">Live Tracking</span>
+                    </div>
+                    <h5 class="fw-bold text-white mb-2">Real-Time Sample Tracking</h5>
+                    <p class="mb-0" style="font-size:0.86rem; color:#94a3b8; line-height:1.65;">Every sample moves through a visible pipeline, from collection to processing to a verified result, updated live.</p>
+                    <div class="mini-visual">
+                        <div class="mini-tracker">
+                            <span class="mini-tracker-dot active"></span>
+                            <span class="mini-tracker-line"></span>
+                            <span class="mini-tracker-dot active"></span>
+                            <span class="mini-tracker-line"></span>
+                            <span class="mini-tracker-dot"></span>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2" style="font-size:0.68rem; color:#64748b;">
+                            <span>Collected</span><span>Processing</span><span>Verified</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="custom-card">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="icon-badge"><i class="bi bi-shield-lock"></i></div>
+                        <span class="micro-badge">Patient Controlled</span>
+                    </div>
+                    <h5 class="fw-bold text-white mb-2">Consent-Controlled Access</h5>
+                    <p class="mb-0" style="font-size:0.86rem; color:#94a3b8; line-height:1.65;">You decide exactly which doctors can view your medical profile, and can revoke that access at any time.</p>
+                    <div class="mini-visual">
+                        <span class="mini-chip"><i class="bi bi-check-circle-fill text-success"></i>Dr. Naidoo, Access Granted</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="custom-card">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="icon-badge"><i class="bi bi-file-earmark-pdf"></i></div>
+                        <span class="micro-badge">Doctor Verified</span>
+                    </div>
+                    <h5 class="fw-bold text-white mb-2">Verified Digital Reports</h5>
+                    <p class="mb-0" style="font-size:0.86rem; color:#94a3b8; line-height:1.65;">Download doctor-released, branded PDF reports the moment they are ready.</p>
+                    <div class="mini-visual">
+                        <span class="mini-chip"><i class="bi bi-file-earmark-check-fill text-primary"></i>Report.pdf</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="custom-card">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="icon-badge"><i class="bi bi-fingerprint"></i></div>
+                        <span class="micro-badge">POPIA Ready</span>
+                    </div>
+                    <h5 class="fw-bold text-white mb-2">Secure Identity Verification</h5>
+                    <p class="mb-0" style="font-size:0.86rem; color:#94a3b8; line-height:1.65;">13-digit South African ID validation keeps every medical record unique and accurate.</p>
+                    <div class="mini-visual">
+                        <span class="mini-chip"><i class="bi bi-lock-fill text-warning"></i>8501&bull;&bull;&bull;&bull;08</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="custom-card">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="icon-badge"><i class="bi bi-graph-up-arrow"></i></div>
+                        <span class="micro-badge">Trend Aware</span>
+                    </div>
+                    <h5 class="fw-bold text-white mb-2">Result Trend Charts</h5>
+                    <p class="mb-0" style="font-size:0.86rem; color:#94a3b8; line-height:1.65;">See how your key markers move over time, not just a single snapshot.</p>
+                    <div class="mini-visual">
+                        <div class="ui-trend" style="height:28px;">
+                            <span style="height:40%; background:linear-gradient(180deg,#0d9488,rgba(13,148,136,0.2));"></span>
+                            <span style="height:65%; background:linear-gradient(180deg,#0d9488,rgba(13,148,136,0.2));"></span>
+                            <span style="height:50%; background:linear-gradient(180deg,#0d9488,rgba(13,148,136,0.2));"></span>
+                            <span style="height:85%; background:linear-gradient(180deg,#0d9488,rgba(13,148,136,0.2));"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* ── 4. FAQ (centered) ── *@
+<section class="faq-section">
+    <div class="container">
+        <div class="row justify-content-center text-center mb-4">
+            <div class="col-lg-7">
+                <h2 class="fw-bold fs-3 mb-2">Frequently Asked Questions</h2>
+                <p class="text-muted mb-0" style="font-size:0.95rem;">Quick answers to the questions we hear most.</p>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="accordion faq-accordion" id="homeFaq">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                Is my medical information secure?
+                            </button>
+                        </h2>
+                        <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#homeFaq">
+                            <div class="accordion-body">
+                                Yes. Your information is encrypted, access is authenticated, and only the people you have granted consent to can view your medical profile. Hema Flow is built with POPIA compliance in mind.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                How do I get started?
+                            </button>
+                        </h2>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#homeFaq">
+                            <div class="accordion-body">
+                                Click "Get Started", fill in your details including your South African ID number, and your account is ready. From there you can request tests and track results straight away.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                Who can see my results?
+                            </button>
+                        </h2>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#homeFaq">
+                            <div class="accordion-body">
+                                Only you, by default. You choose which doctors can view your medical profile from your account settings, and you can revoke that access at any time.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                Is there a cost to use Hema Flow?
+                            </button>
+                        </h2>
+                        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#homeFaq">
+                            <div class="accordion-body">
+                                No. Patient access to Hema Flow is completely free.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                                What if I forget my password?
+                            </button>
+                        </h2>
+                        <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#homeFaq">
+                            <div class="accordion-body">
+                                Use the "Forgot Password" link on the login page and follow the steps to reset it.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* ── 5. CTA ── *@
+<section class="py-5 mb-4 bg-white">
+    <div class="container">
+        <div class="cta-card">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-7">
+                    <div class="text-uppercase fw-semibold mb-2" style="font-size:0.7rem; letter-spacing:3px; color:rgba(255,255,255,0.4);">Hema Flow Portal</div>
+                    <h2 class="fw-bold text-white mb-3" style="font-size:2rem; line-height:1.2;">Your diagnostic results,<br>securely at your fingertips.</h2>
+                    <p style="color:rgba(255,255,255,0.55); font-size:0.92rem; max-width:460px; line-height:1.7; margin-bottom:0;">
+                        Submit test requests, track your specimens, and download verified reports, all from one portal built for NMBHDL.
+                    </p>
+                </div>
+                <div class="col-lg-5 d-flex flex-column align-items-lg-end gap-3">
+                    <div class="d-flex gap-3">
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-light rounded-pill px-4 py-2 fw-semibold">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Enter Portal
+                        </a>
+                        <a asp-controller="Account" asp-action="Register" class="btn btn-outline-light rounded-pill px-4 py-2">Register</a>
+                    </div>
+                    <div class="d-flex gap-4" style="font-size:0.8rem; color:rgba(255,255,255,0.35);">
+                        <span><i class="bi bi-shield-check me-1" style="color:rgba(255,255,255,0.5);"></i>POPIA Compliant</span>
+                        <span><i class="bi bi-lock me-1" style="color:rgba(255,255,255,0.5);"></i>End-to-end Encrypted</span>
+                        <span><i class="bi bi-clock me-1" style="color:rgba(255,255,255,0.5);"></i>24/7 Access</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<button type="button" id="backToTop" class="back-to-top" aria-label="Back to top">
+    <i class="bi bi-arrow-up"></i>
+</button>
+
+<script>
+    (function () {
+        var btn = document.getElementById('backToTop');
+        if (!btn) return;
+        window.addEventListener('scroll', function () {
+            if (window.scrollY > 420) {
+                btn.classList.add('show');
+            } else {
+                btn.classList.remove('show');
+            }
+        });
+        btn.addEventListener('click', function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    })();
+</script>

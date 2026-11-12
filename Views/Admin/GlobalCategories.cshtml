@@ -1,0 +1,204 @@
+﻿@model Project.Models.GlobalCategoriesViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Categories | Hema Flow";
+}
+
+<div class="row align-items-center mb-4 g-3">
+    <div class="col-md-6">
+        <h4 class="fw-700 mb-1" style="color: #0f172a;">Manage Categories</h4>
+        <p class="text-muted small mb-0">Categories are used to group medical conditions, allergies, and medications throughout the system.</p>
+    </div>
+    <div class="col-md-6 d-flex justify-content-md-end gap-2">
+        <a asp-controller="Admin" asp-action="SystemArchive" class="btn btn-outline-secondary py-2 px-3">
+            <i class="bi bi-archive me-2"></i>View Archived
+        </a>
+        <button class="btn btn-dark py-2 px-3" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+            <i class="bi bi-folder-plus me-2"></i>Add Category
+        </button>
+    </div>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div data-toast="danger" class="alert alert-danger rounded-0 border-0 border-start border-3 border-danger small mb-4">
+        <i class="bi bi-exclamation-circle me-2"></i>@TempData["Error"]
+    </div>
+}
+
+<div class="row g-4">
+    @foreach (var group in new[] {
+        ("Medical Condition Categories", "bi-clipboard2-pulse text-primary",  Model.MedicalCategories,    "Medical"),
+        ("Allergy Categories",           "bi-exclamation-triangle text-warning", Model.AllergyCategories, "Allergy"),
+        ("Medication Categories",        "bi-capsule text-info",               Model.MedicationCategories,"Medication")
+        })
+    {
+        <div class="col-lg-4">
+            <div class="card h-100 mb-0">
+                <div class="card-header justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi @group.Item2"></i>
+                        <span>@group.Item1</span>
+                    </div>
+                    <span class="text-muted x-small">@group.Item3.Count entries</span>
+                </div>
+                <div class="p-0">
+                    @if (!group.Item3.Any())
+                    {
+                        <p class="p-3 text-muted small mb-0">No categories added yet.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-hover align-middle mb-0" style="font-size:0.82rem;">
+                            <thead>
+                                <tr class="bg-light text-muted text-uppercase fw-600" style="font-size:0.68rem;">
+                                    <th class="ps-3 py-2">Name</th>
+                                    <th class="py-2">Code</th>
+                                    <th class="text-end pe-3 py-2">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var c in group.Item3)
+                                {
+                                    <tr style="border-bottom:1px solid #f1f5f9;">
+                                        <td class="ps-3 fw-600 text-dark py-2">@c.Name</td>
+                                        <td class="text-muted font-monospace x-small">@c.SysCode</td>
+                                        <td class="text-end pe-3">
+                                            <div class="d-flex justify-content-end gap-1">
+                                                <button class="btn btn-outline-secondary py-1 px-2" style="font-size:0.72rem !important;"
+                                                        data-bs-toggle="modal" data-bs-target="#editCategoryModal"
+                                                        onclick="openEdit('@c.Id','@c.Name','@group.Item4')">
+                                                    Edit
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger py-1 px-2" style="font-size:0.72rem !important;"
+                                                        data-bs-toggle="modal" data-bs-target="#archiveCategoryModal"
+                                                        onclick="openArchiveCategory('@c.Id','@c.Name')">
+                                                    <i class="bi bi-archive"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@* Add Category Modal *@
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 bg-white" style="border-radius:0;">
+            <div class="modal-header border-bottom px-4 py-3 justify-content-between">
+                <h6 class="fw-700 text-dark mb-0"><i class="bi bi-folder-plus text-primary me-2"></i>Add Category</h6>
+                <button type="button" class="btn-close shadow-none small" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form asp-action="SaveCategory" asp-controller="Admin" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Applies To</label>
+                        <select name="domainType" class="form-select bg-light border-0 rounded-0 shadow-none py-2 small">
+                            <option value="Medical">Medical Conditions</option>
+                            <option value="Allergy">Allergies</option>
+                            <option value="Medication">Medications</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small"
+                               placeholder="e.g. Coagulation Disorder" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Short Code (2-3 letters)</label>
+                        <input type="text" name="sysCode" maxlength="3" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small font-monospace"
+                               placeholder="e.g. CD">
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end pt-2 border-top">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-dark">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Edit Category Modal - posts to UpdateCategory *@
+<div class="modal fade" id="editCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 bg-white" style="border-radius:0;">
+            <div class="modal-header border-bottom px-4 py-3 justify-content-between">
+                <h6 class="fw-700 text-dark mb-0"><i class="bi bi-pencil text-primary me-2"></i>Edit Category</h6>
+                <button type="button" class="btn-close shadow-none small" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form asp-action="UpdateCategory" asp-controller="Admin" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="editCatId" name="id" />
+                    <div class="mb-3">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Type</label>
+                        <select id="editCatScope" name="domainType" class="form-select bg-light border-0 rounded-0 shadow-none py-2 small">
+                            <option value="Medical">Medical Conditions</option>
+                            <option value="Allergy">Allergies</option>
+                            <option value="Medication">Medications</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" id="editCatName" name="name" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small" required>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end pt-2 border-top">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-dark">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openEdit(id, name, scope) {
+            document.getElementById('editCatId').value    = id;
+            document.getElementById('editCatName').value  = name;
+            document.getElementById('editCatScope').value = scope;
+        }
+        function openArchiveCategory(id, name) {
+            document.getElementById('archiveCatId').value = id;
+            document.getElementById('archiveCatName').textContent = name;
+            document.getElementById('archiveCatReason').value = '';
+        }
+    </script>
+}
+
+@* Archive Category Modal (with reason) *@
+<div class="modal fade" id="archiveCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 bg-white" style="border-radius:0;">
+            <div class="modal-header border-bottom px-4 py-3 justify-content-between">
+                <h6 class="fw-700 text-dark mb-0"><i class="bi bi-archive text-danger me-2"></i>Archive Category</h6>
+                <button type="button" class="btn-close shadow-none small" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="small text-muted">Archiving <strong id="archiveCatName" class="text-dark"></strong>. It can be restored later from the archive.</p>
+                <form asp-action="DeleteCategory" asp-controller="Admin" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="archiveCatId" name="id" />
+                    <div class="mb-4">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Reason for Archiving <span class="text-danger">*</span></label>
+                        <textarea id="archiveCatReason" name="reason" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small" rows="2" required placeholder="e.g. Duplicate category, no longer in use..."></textarea>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end pt-2 border-top">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Archive</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

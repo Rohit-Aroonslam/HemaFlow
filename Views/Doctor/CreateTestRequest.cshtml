@@ -1,0 +1,741 @@
+﻿@model Project.Models.Doctor.CreateTestRequestViewModel
+@{
+    Layout = "_DoctorLayout";
+    ViewData["Title"] = "New Test Request";
+}
+
+<div class="mb-4">
+    <a asp-controller="Doctor" asp-action="TrackRequests" class="btn btn-sm btn-outline-secondary rounded-3 px-3 mb-3">
+        <i class="bi bi-arrow-left me-1"></i> Back to Requests
+    </a>
+    <h4 class="fw-700 mb-1" style="color: #0f172a;">Create Test Request</h4>
+    <p class="text-muted">Select a patient, choose tests, and record sample barcodes.</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="glass-card p-5">
+            <form method="post" asp-controller="Doctor" asp-action="CreateTestRequest" id="requestForm">
+                <h6 class="text-muted text-uppercase fw-bold small mb-3">Step 1 - Patient</h6>
+
+                <div class="mb-3">
+                    <label class="form-label small text-muted text-uppercase fw-bold">
+                        Select Existing Patient <span id="patientError" class="text-danger ms-2 fw-normal" style="display:none; font-size: 0.75rem;">* Please select a patient</span>
+                    </label>
+                    <select name="PatientId" id="patientSelect" class="form-select bg-light border-0"
+                            onchange="onPatientDropdownChange(this.value)">
+                        <option value="">- Choose a patient -</option>
+                        @if (Model?.Patients != null)
+                        {
+                            @foreach (var p in Model.Patients)
+                            {
+                                <option value="@p.PatientId" selected="@(p.PatientId == Model.PatientId)">@p.Name @p.Surname (@p.SaIdNumber)</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="d-flex gap-2 mb-3">
+                    <div class="flex-grow-1">
+                        <label class="form-label small text-muted text-uppercase fw-bold">Or Search by SA ID Number</label>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="idSearchInput" class="form-control bg-light border-0 rounded-3 px-3"
+                                   placeholder="Enter 13-digit SA ID number..." maxlength="13" inputmode="numeric" autocomplete="off" oninput="liveSearchById()" onkeydown="if(event.key==='Enter'){event.preventDefault();searchPatientById();}">
+                            <button type="button" class="btn btn-dark rounded-3 px-4 text-nowrap" onclick="searchPatientById()"
+                                    title="Search for patient">
+                                <i class="bi bi-search me-1"></i> Search
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="idSuggestions" class="list-group mb-3" style="display:none;"></div>
+
+                <!-- ═══ PATIENT INFO CARD PREVIEW ═══ -->
+                <div id="patientInfoCard" class="glass-card p-3 mb-3" style="display:none; border-left: 4px solid #3b82f6;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-bold" id="infoCardName"></span>
+                            <span class="text-muted small ms-3" id="infoCardDetails"></span>
+                        </div>
+                        <div id="infoCardActionBtn" style="display:none;">
+                            <button type="button" class="btn btn-sm btn-dark rounded-3 px-3" onclick="selectSearchedPatient()">
+                                <i class="bi bi-person-check me-1"></i> Select Patient
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <a asp-action="AddPatient" asp-controller="Doctor" class="btn btn-outline-dark rounded-3 px-4 add-patient-btn"
+                       title="Patient not found? Add them to the system">
+                        <i class="bi bi-person-plus me-2"></i>Add New Patient
+                    </a>
+                    <span class="text-muted small ms-2">Patient not on the system?</span>
+                </div>
+
+                <!-- ═══ PATIENT MEDICAL DATA & HISTORICAL TEST RESULTS ═══ -->
+                <div id="patientMedicalData" style="display:none;" class="mb-4">
+                    <div class="glass-card p-0" style="border-left: 4px solid #3b82f6;">
+                        <div class="p-3 border-bottom">
+                            <span class="fw-bold small text-uppercase text-muted">Patient Medical Data</span>
+                            <span class="text-muted small ms-2">- Review before writing clinical notes</span>
+                        </div>
+                        <ul class="nav nav-tabs border-0 px-3 pt-2" id="medicalTabs">
+                            <li class="nav-item">
+                                <button class="nav-link active small fw-bold" data-bs-toggle="tab"
+                                        data-bs-target="#tabAllergies" type="button">
+                                    <i class="bi bi-exclamation-diamond me-1 text-warning"></i>Allergies
+                                    <span class="badge bg-warning-subtle text-warning rounded-3 ms-1" id="allergyCount">0</span>
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link small fw-bold" data-bs-toggle="tab"
+                                        data-bs-target="#tabConditions" type="button">
+                                    <i class="bi bi-heart-pulse me-1 text-info"></i>Conditions
+                                    <span class="badge bg-info-subtle text-info rounded-3 ms-1" id="conditionCount">0</span>
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link small fw-bold" data-bs-toggle="tab"
+                                        data-bs-target="#tabMedications" type="button">
+                                    <i class="bi bi-capsule me-1 text-success"></i>Medications
+                                    <span class="badge bg-success-subtle text-success rounded-3 ms-1" id="medicationCount">0</span>
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link small fw-bold" data-bs-toggle="tab"
+                                        data-bs-target="#tabHistory" type="button">
+                                    <i class="bi bi-journal-medical me-1 text-primary"></i>Previous Results
+                                    <span class="badge bg-primary-subtle text-primary rounded-3 ms-1" id="historyCount">0</span>
+                                </button>
+                            </li>
+                        </ul>
+                        <div class="tab-content p-3">
+                            <div class="tab-pane fade show active" id="tabAllergies">
+                                <div id="allergyList"></div>
+                            </div>
+                            <div class="tab-pane fade" id="tabConditions">
+                                <div id="conditionList"></div>
+                            </div>
+                            <div class="tab-pane fade" id="tabMedications">
+                                <div id="medicationList"></div>
+                            </div>
+                            <div class="tab-pane fade" id="tabHistory">
+                                <div id="consentWarning" class="alert alert-warning border-0 small py-2 mb-3" style="display: none;">
+                                    <i class="bi bi-shield-lock me-1"></i>
+                                    <strong>Restricted View:</strong> Patient has not granted consent to view tests ordered by other doctors. Only your previous orders are shown.
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover align-middle mb-0">
+                                        <thead class="table-light small">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Test Name</th>
+                                                <th>Result Value</th>
+                                                <th>Ref. Range</th>
+                                                <th>Ordered By</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="historyTableBody">
+                                            <!-- Dynamically populated via JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <h6 class="text-muted text-uppercase fw-bold small mb-3">Step 2 - Request Details</h6>
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted text-uppercase fw-bold">Request Date & Time</label>
+                        <input type="datetime-local" id="requestDateDisplay"
+                               class="form-control bg-light border-0 text-muted"
+                               readonly tabindex="-1" style="pointer-events: none;">
+                        <input type="hidden" name="RequestDate" id="requestDate">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted text-uppercase fw-bold">Urgency</label>
+                        <select name="Urgency" class="form-select bg-light border-0" required>
+                            <option value="Routine" selected="@(Model?.Urgency == "Routine")">Routine</option>
+                            <option value="Urgent" selected="@(Model?.Urgency == "Urgent")">Urgent</option>
+                            <option value="Stat" selected="@(string.Equals(Model?.Urgency, "Stat", StringComparison.OrdinalIgnoreCase))">STAT</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small text-muted text-uppercase fw-bold">Clinical Notes</label>
+                        <textarea name="ClinicalNotes" class="form-control bg-light border-0" rows="4"
+                                  maxlength="1000" placeholder="Relevant clinical information for the lab technician...">@Model?.ClinicalNotes</textarea>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <h6 class="text-muted text-uppercase fw-bold small mb-3">
+                    Step 3 - Select Test Types <span id="testTypeError" class="text-danger ms-2 fw-normal" style="display:none; font-size: 0.75rem;">* Please select at least one test</span>
+                </h6>
+                <p class="text-muted small mb-3">Select a category, then tick the tests required. Sample types are assigned automatically.</p>
+
+                <div class="mb-3">
+                    <label class="form-label small text-muted text-uppercase fw-bold">Filter by Category</label>
+                    <select id="categoryFilter" class="form-select bg-light border-0" onchange="filterByCategory()">
+                        <option value="all">All Categories</option>
+                        @if (Model?.Categories != null)
+                        {
+                            @foreach (var cat in Model.Categories)
+                            {
+                                <option value="@cat.Slug">@cat.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div id="testTypesContainer" class="mb-4">
+                    @if (Model?.Categories != null)
+                    {
+                        @foreach (var category in Model.Categories)
+                        {
+                            <div class="mb-3 test-category" data-category="@category.Slug">
+                                <p class="fw-bold small mb-2 text-uppercase text-muted">@category.Name</p>
+                                <div class="row g-2">
+                                    @foreach (var test in category.TestTypes)
+                                    {
+                                        <div class="col-md-4">
+                                            <div class="form-check bg-light p-3 test-option"
+                                                 data-sample-type="@test.SampleType" data-sample-color="@test.SampleColor">
+                                                <input class="form-check-input test-checkbox" type="checkbox"
+                                                       name="TestTypeIds" value="@test.Id" id="tt_@test.Id" onchange="updateSampleRows()" checked="@(Model.TestTypeIds.Contains(test.Id))">
+                                                <label class="form-check-label small" for="tt_@test.Id">
+                                                    @test.Name
+                                                    <br><span class="text-muted" style="font-size:0.72rem;">@test.SampleType</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+
+                <hr class="my-4">
+
+                <h6 class="text-muted text-uppercase fw-bold small mb-2">Step 4 - Sample Barcodes</h6>
+                <p class="text-muted small mb-3">
+                    Sample types are determined by the tests you selected. Barcodes are automatically generated.
+                </p>
+
+                <div id="noBarcodeMsg" class="alert alert-light border small mb-3">
+                    <i class="bi bi-info-circle me-2"></i>Select test types above to see required sample tubes.
+                </div>
+
+                <div id="barcodeContainer" class="mb-4"></div>
+
+                <hr class="my-4">
+
+                <div class="d-flex gap-3">
+                    <button type="button" class="btn btn-dark btn-lg rounded-3 px-5 shadow-sm"
+                            onclick="confirmSubmit()">
+                        <i class="bi bi-send me-2"></i>Submit Request
+                    </button>
+                    <a asp-action="TrackRequests" asp-controller="Doctor" class="btn btn-outline-secondary btn-lg rounded-3 px-4">Cancel</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:0; border:1px solid #e1e1e1;">
+            <div class="modal-header border-bottom" style="padding:1.25rem 1.5rem;">
+                <h6 class="modal-title fw-bold mb-0">Confirm Test Request</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:1.5rem;">
+                <p class="text-muted small mb-0">Submit this test request to the lab? Please confirm all details are correct.</p>
+            </div>
+            <div class="modal-footer border-top" style="padding:1rem 1.5rem; gap:0.5rem;">
+                <button type="button" class="btn btn-outline-secondary rounded-3 px-4"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-dark rounded-3 px-4"
+                        onclick="document.getElementById('requestForm').submit()">
+                    <i class="bi bi-send me-2"></i>Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .test-option {
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+        .test-option:hover {
+            background: #e9ecef !important;
+        }
+
+        .test-option.selected {
+            background: #dbeafe !important;
+            border: 1px solid #3b82f6;
+        }
+
+    .add-patient-btn {
+        border-style: dashed;
+        transition: all 0.2s;
+    }
+
+        .add-patient-btn:hover {
+            background: #0f172a;
+            color: #fff;
+            border-style: solid;
+        }
+
+    .tube-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 6px;
+        vertical-align: middle;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        let currentSearchedPatientId = "";
+
+        @{
+                    var patientDict = new Dictionary<string, object>();
+                    if (Model?.Patients != null)
+                    {
+                                foreach (var p in Model.Patients)
+                                {
+                                            patientDict[p.PatientId.ToString()] = new
+                                            {
+                                                        id = p.PatientId.ToString(),
+                                                        saId = p.SaIdNumber ?? "",
+                                                        name = $"{p.Name} {p.Surname}".Trim(),
+                                                        dob = p.DateOfBirth ?? "",
+                                                        contact = p.ContactNumber ?? "",
+                                                        allergies = p.Allergies ?? new List<string>(),
+                                                        conditions = p.Conditions ?? new List<string>(),
+                                                        medications = p.Medications ?? new List<string>(),
+                                                        hasGivenConsent = p.HasGivenConsentForExternalResults,
+                                                        testHistory = (p.TestHistory ?? new List<PatientTestHistoryViewModel>()).Select(th => new
+                                                        {
+                                                                    testRequestId = th.TestRequestId,
+                                                                    orderDate = th.OrderDate.ToString("yyyy-MM-dd"),
+                                                                    testName = th.TestName ?? "",
+                                                                    category = th.Category ?? "",
+                                                                    resultValue = th.ResultValue ?? "",
+                                                                    referenceRange = th.ReferenceRange ?? "",
+                                                                    status = th.Status ?? "",
+                                                                    isAbnormal = th.IsAbnormal,
+                                                                    orderedByDoctor = th.OrderedByDoctor ?? "",
+                                                                    isOrderedByCurrentDoctor = th.IsOrderedByCurrentDoctor
+                                                        }).ToList()
+                                            };
+                                }
+                    }
+        }
+
+        const patientsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(patientDict));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            const local = new Date(now - now.getTimezoneOffset() * 60000)
+                .toISOString().slice(0, 16);
+
+            document.getElementById('requestDateDisplay').value = local;
+            document.getElementById('requestDate').value = local;
+
+            // Coming from a patient profile (or back from a failed submit): restore the patient and ticked tests.
+            const sel = document.getElementById('patientSelect');
+            if (sel && sel.value) onPatientDropdownChange(sel.value);
+            updateSampleRows();
+        });
+
+        function getPatientDetailsFromSaId(saIdNumber) {
+            if (!saIdNumber || saIdNumber.length !== 13 || isNaN(saIdNumber)) {
+                return { age: null, gender: null };
+            }
+
+            const yearStr = saIdNumber.substring(0, 2);
+            const monthStr = saIdNumber.substring(2, 4);
+            const dayStr = saIdNumber.substring(4, 6);
+
+            const currentYear = new Date().getFullYear();
+            const century = parseInt(yearStr, 10) > (currentYear % 100) ? "19" : "20";
+            const fullYear = parseInt(century + yearStr, 10);
+            const birthDate = new Date(fullYear, parseInt(monthStr, 10) - 1, parseInt(dayStr, 10));
+
+            let age = currentYear - fullYear;
+            const m = new Date().getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && new Date().getDate() < birthDate.getDate())) {
+                age--;
+            }
+
+            const genderCode = parseInt(saIdNumber.substring(6, 10), 10);
+            const gender = genderCode >= 5000 ? "Male" : "Female";
+
+            return { age, gender };
+        }
+
+        const tubeColours = {
+            'Whole Blood (EDTA)':          { colour: '#8B5CF6', label: 'Purple / Lavender' },
+            'Citrated Blood':              { colour: '#3B82F6', label: 'Blue' },
+            'Serum (SST)':                 { colour: '#F59E0B', label: 'Gold / Yellow' },
+            'Heparin Plasma':              { colour: '#10B981', label: 'Green' },
+            'Bone Marrow':                 { colour: '#EF4444', label: 'Red' },
+            'Digital / Leads':             { colour: '#EC4899', label: 'Pink' },
+            'Spirometry / Airflow Breath': { colour: '#0d9488', label: 'Teal' }
+        };
+
+        // Tube names by colour, so any sample type with a known colour gets a proper name.
+        const colourNames = {
+            '#8B5CF6': 'Purple / Lavender', '#3B82F6': 'Blue', '#F59E0B': 'Gold / Yellow', '#10B981': 'Green',
+            '#EF4444': 'Red', '#EC4899': 'Pink', '#0D9488': 'Teal', '#EAB308': 'Yellow',
+            '#6366F1': 'Indigo', '#F97316': 'Orange', '#84CC16': 'Lime', '#14B8A6': 'Turquoise', '#D97706': 'Amber'
+        };
+
+        function getTubeColour(sampleType, customColor) {
+            if (tubeColours[sampleType]) return tubeColours[sampleType];
+            if (customColor && customColor.startsWith('#')) {
+                return { colour: customColor, label: colourNames[customColor.toUpperCase()] || 'Grey' };
+            }
+            return { colour: '#6B7280', label: 'Grey' };
+        }
+
+        function updateSampleRows() {
+            const checked = document.querySelectorAll('.test-checkbox:checked');
+            const container = document.getElementById('barcodeContainer');
+            const noMsg = document.getElementById('noBarcodeMsg');
+
+            if (checked.length > 0) {
+                document.getElementById('testTypeError').style.display = 'none';
+            }
+
+            document.querySelectorAll('.test-option').forEach(el => {
+                const cb = el.querySelector('.test-checkbox');
+                el.classList.toggle('selected', cb && cb.checked);
+            });
+
+            if (checked.length === 0) {
+                container.innerHTML = '';
+                noMsg.style.display = 'block';
+                return;
+            }
+
+            noMsg.style.display = 'none';
+
+            const groupedSamples = {};
+            const colourByType = {};
+
+            checked.forEach(cb => {
+                const card = cb.closest('.test-option');
+                const sampleType = card.dataset.sampleType;
+                colourByType[sampleType] = card.dataset.sampleColor;
+                const testName = card.querySelector('label').firstChild.textContent.trim();
+
+                if (!groupedSamples[sampleType]) {
+                    groupedSamples[sampleType] = [];
+                }
+                groupedSamples[sampleType].push(testName);
+            });
+
+            let html = `<div class="d-flex flex-column gap-3">`;
+            let globalIndex = 0;
+            const year = new Date().getFullYear();
+
+            Object.keys(groupedSamples).forEach(sampleType => {
+                const tests = groupedSamples[sampleType];
+                const tube = getTubeColour(sampleType, colourByType[sampleType]);
+
+                let testBarcodeRows = '';
+                tests.forEach(testName => {
+                    const randomSuffix = Math.floor(10000 + Math.random() * 90000);
+                    const autoBarcode = `BC-${year}-${randomSuffix}`;
+
+                    testBarcodeRows += `
+                        <div class="mb-3">
+                            <label class="form-label small text-muted fw-bold mb-1" style="font-size:0.7rem;">
+                                BARCODE FOR <span class="text-dark">${testName.toUpperCase()}</span> <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white border-0 text-muted"><i class="bi bi-barcode"></i></span>
+                                <input type="text"
+                                       name="Barcodes[${globalIndex}].BarcodeNumber"
+                                       class="form-control border-0 bg-white shadow-none fw-semibold text-dark"
+                                       value="${autoBarcode}"
+                                       readonly
+                                       required>
+                            </div>
+                            <input type="hidden" name="Barcodes[${globalIndex}].SampleType" value="${sampleType}">
+                        </div>`;
+                    globalIndex++;
+                });
+
+                html += `
+                    <div class="p-4 rounded-3 border bg-light shadow-sm"
+                         style="border-left: 5px solid ${tube.colour} !important;">
+
+                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                            <div class="d-flex align-items-center">
+                                <span class="tube-dot" style="background:${tube.colour}; width:16px; height:16px;"></span>
+                                <span class="fw-bold small text-uppercase tracking-wider ms-2">${sampleType}</span>
+                            </div>
+                            <span class="badge rounded-3 text-dark border bg-white small px-3 py-1" style="font-size:0.7rem;">
+                                ${tube.label} Tube (${tests.length} Test${tests.length > 1 ? 's' : ''})
+                            </span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                ${testBarcodeRows}
+                            </div>
+                        </div>
+
+                    </div>`;
+            });
+
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        function filterByCategory() {
+            const val = document.getElementById('categoryFilter').value;
+            document.querySelectorAll('.test-category').forEach(cat => {
+                cat.style.display = (val === 'all' || cat.dataset.category === val) ? '' : 'none';
+            });
+        }
+
+        function onPatientDropdownChange(patientId) {
+            document.getElementById('patientError').style.display = 'none';
+            document.getElementById('patientSelect').classList.remove('is-invalid');
+            document.getElementById('idSearchInput').value = '';
+            document.getElementById('idSuggestions').style.display = 'none';
+
+            if (!patientId) {
+                document.getElementById('patientInfoCard').style.display = 'none';
+                loadPatientMedicalData(null);
+                return;
+            }
+
+            const p = patientsData[patientId];
+            if (p) {
+                const { age, gender } = getPatientDetailsFromSaId(p.saId);
+                const genderAgeText = (age !== null && gender !== null) ? ` | Gender: ${gender} | Age: ${age} yrs` : '';
+
+                document.getElementById('infoCardName').textContent = p.name;
+                document.getElementById('infoCardDetails').textContent = `DOB: ${p.dob}${genderAgeText} | Contact: ${p.contact}`;
+                document.getElementById('infoCardActionBtn').style.display = 'none';
+                document.getElementById('patientInfoCard').style.display = 'block';
+                loadPatientMedicalData(p);
+            } else {
+                loadPatientMedicalData(null);
+            }
+        }
+
+        // Searches as you type: every patient whose SA ID starts with the digits typed so far.
+        function liveSearchById() {
+            const input = document.getElementById('idSearchInput');
+            const box = document.getElementById('idSuggestions');
+            const typed = input.value.replace(/\D/g, '');
+            if (input.value !== typed) input.value = typed;
+
+            document.getElementById('patientInfoCard').style.display = 'none';
+            currentSearchedPatientId = "";
+            if (!typed) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+            const matches = Object.values(patientsData).filter(p => (p.saId || '').startsWith(typed));
+            if (matches.length === 0) {
+                box.innerHTML = '<div class="list-group-item small text-muted border-0 bg-light">No patient found with an ID starting with ' + typed + '.</div>';
+                box.style.display = 'block';
+                return;
+            }
+            if (typed.length === 13 && matches.length === 1) {
+                box.style.display = 'none';
+                searchPatientById();
+                return;
+            }
+            box.innerHTML = matches.slice(0, 6).map(p =>
+                '<button type="button" class="list-group-item list-group-item-action small border-0 bg-light" onclick="pickSuggestedPatient(\'' + p.id + '\')">' +
+                '<span class="fw-bold">' + p.name + '</span> <span class="text-muted ms-2">' + p.saId + '</span></button>'
+            ).join('') + (matches.length > 6 ? '<div class="list-group-item small text-muted border-0 bg-light">' + (matches.length - 6) + ' more... keep typing to narrow it down.</div>' : '');
+            box.style.display = 'block';
+        }
+
+        function pickSuggestedPatient(id) {
+            document.getElementById('patientSelect').value = id;
+            onPatientDropdownChange(id);
+        }
+
+        function searchPatientById() {
+            const id = document.getElementById('idSearchInput').value.trim();
+            if (!id) return;
+
+            const foundPatientKey = Object.keys(patientsData).find(key => patientsData[key].saId === id);
+            const card = document.getElementById('patientInfoCard');
+
+            if (foundPatientKey) {
+                const p = patientsData[foundPatientKey];
+                currentSearchedPatientId = p.id;
+
+                const { age, gender } = getPatientDetailsFromSaId(p.saId);
+                const genderAgeText = (age !== null && gender !== null) ? ` | Gender: ${gender} | Age: ${age} yrs` : '';
+
+                document.getElementById('infoCardName').textContent = p.name;
+                document.getElementById('infoCardDetails').textContent = `DOB: ${p.dob}${genderAgeText} | Contact: ${p.contact}`;
+                document.getElementById('infoCardActionBtn').style.display = 'block';
+                card.style.display = 'block';
+            } else {
+                currentSearchedPatientId = "";
+                card.style.display = 'none';
+                alert('Patient not found on the system. Use "Add New Patient" to register them.');
+            }
+        }
+
+        function selectSearchedPatient() {
+            if (currentSearchedPatientId) {
+                const selectEl = document.getElementById('patientSelect');
+                selectEl.value = currentSearchedPatientId;
+                document.getElementById('idSearchInput').value = '';
+                onPatientDropdownChange(currentSearchedPatientId);
+            }
+        }
+
+        async function loadPatientMedicalData(patient) {
+            const container = document.getElementById('patientMedicalData');
+            if (!patient) {
+                container.style.display = 'none';
+                return;
+            }
+
+            // Allergies, conditions, medication and previous results come from the database when a patient is chosen.
+            if (!patient.loaded) {
+                try {
+                    const r = await fetch('@(Url.Action("PatientSummary", "Doctor"))?id=' + encodeURIComponent(patient.id), { headers: { 'Accept': 'application/json' } });
+                    if (r.ok) {
+                        const d = await r.json();
+                        patient.allergies = d.allergies || [];
+                        patient.conditions = d.conditions || [];
+                        patient.medications = d.medications || [];
+                        patient.hasGivenConsent = !!d.hasGivenConsent;
+                        patient.testHistory = d.testHistory || [];
+                        patient.loaded = true;
+                    }
+                } catch (e) { console.error(e); }
+            }
+            // The doctor may have picked someone else while this was loading.
+            if (document.getElementById('patientSelect').value !== String(patient.id)) return;
+
+            renderBadges('allergyList', 'allergyCount', patient.allergies, 'warning');
+            renderBadges('conditionList', 'conditionCount', patient.conditions, 'info');
+            renderBadges('medicationList', 'medicationCount', patient.medications, 'success');
+            renderTestHistory(patient);
+
+            container.style.display = 'block';
+        }
+
+        function renderBadges(listId, countId, items, theme) {
+            const listEl = document.getElementById(listId);
+            const countEl = document.getElementById(countId);
+
+            countEl.textContent = items.length;
+            if (items.length === 0) {
+                listEl.innerHTML = '<span class="text-muted small">None recorded</span>';
+            } else {
+                listEl.innerHTML = items.map(item =>
+                    `<span class="badge bg-${theme}-subtle text-${theme} border border-${theme}-subtle rounded-3 px-3 me-1">${item}</span>`
+                ).join('');
+            }
+        }
+
+        function renderTestHistory(patient) {
+            const countEl = document.getElementById('historyCount');
+            const tbody = document.getElementById('historyTableBody');
+            const consentWarning = document.getElementById('consentWarning');
+
+            const filteredHistory = (patient.testHistory || []).filter(item =>
+                patient.hasGivenConsent || item.isOrderedByCurrentDoctor
+            );
+
+            countEl.textContent = filteredHistory.length;
+
+            if (!patient.hasGivenConsent) {
+                consentWarning.style.display = 'block';
+            } else {
+                consentWarning.style.display = 'none';
+            }
+
+            if (filteredHistory.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted small py-3">No previous test results recorded for this patient.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filteredHistory.map(item => {
+                const valueBadge = item.isAbnormal
+                    ? `<span class="badge bg-danger-subtle text-danger border border-danger-subtle">${item.resultValue}</span>`
+                    : `<span>${item.resultValue}</span>`;
+
+                const doctorBadge = item.isOrderedByCurrentDoctor
+                    ? `${item.orderedByDoctor} <span class="badge bg-primary-subtle text-primary ms-1">You</span>`
+                    : item.orderedByDoctor;
+
+                return `
+                    <tr>
+                        <td class="small">${item.orderDate}</td>
+                        <td class="fw-bold small">${item.testName}</td>
+                        <td class="small">${valueBadge}</td>
+                        <td class="text-muted small">${item.referenceRange}</td>
+                        <td class="small">${doctorBadge}</td>
+                        <td><span class="badge bg-success-subtle text-success">${item.status}</span></td>
+                    </tr>`;
+            }).join('');
+        }
+
+        function confirmSubmit() {
+            const patientSelect = document.getElementById('patientSelect');
+            const patientError = document.getElementById('patientError');
+            const testTypeError = document.getElementById('testTypeError');
+            const checkedCount = document.querySelectorAll('.test-checkbox:checked').length;
+
+            let isValid = true;
+
+            if (!patientSelect.value) {
+                patientError.style.display = 'inline';
+                patientSelect.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                patientError.style.display = 'none';
+                patientSelect.classList.remove('is-invalid');
+            }
+
+            if (checkedCount === 0) {
+                testTypeError.style.display = 'inline';
+                isValid = false;
+            } else {
+                testTypeError.style.display = 'none';
+            }
+
+            if (!isValid) {
+                const firstError = !patientSelect.value ? patientSelect : document.getElementById('testTypesContainer');
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            new bootstrap.Modal(document.getElementById('confirmModal')).show();
+        }
+    </script>
+}

@@ -1,0 +1,222 @@
+@{
+    Layout = "_LabTechLayout";
+    ViewData["Title"] = "Dashboard";
+
+    var technician    = (Technician)ViewBag.CurrentTechnician;
+    var lists         = (List<LabTechQueueList>)ViewBag.Lists;
+    var filter        = (LabTechFilter)ViewBag.Filter;
+    var categories    = (List<TestCategory>)ViewBag.Categories;
+    var stockStatus   = (Dictionary<int, string>)ViewBag.StockStatus;
+    var verifiableIds = (HashSet<int>)ViewBag.VerifiableIds;
+    var open          = ViewBag.Open as string;
+
+    var filterData = new ViewDataDictionary(ViewData) { ["Categories"] = categories };
+    ViewBag.FilterActive = filter.Any;
+
+    // Spec: "Technician Dashboard" requires exactly these 7 displays. Grouped
+    // into two priority tiers rather than one flat row - alerts (needs action
+    // now) read differently from workflow state (where my work stands) - but
+    // every card below keeps its own title/count so each spec bullet still
+    // maps 1:1 to a labeled card, nothing is merged away.
+    var needsAttention = lists.Where(l => l.Key is "stat" or "overdue" or "nearing").ToList();
+    var yourWorkflow   = lists.Where(l => l.Key is "mine" or "available" or "verify" or "review").ToList();
+
+    LabTechQueueList L(string key) => lists.First(x => x.Key == key);
+    var statOrder = new[] { "stat", "overdue", "nearing", "mine", "available", "verify", "review" };
+}
+
+@section Styles {
+<style>
+/* ── Header chrome: clock + weather, same component as Patient/Admin,
+   confined to the welcome header, never inside a data card ── */
+.dash-chrome-strip { display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.dash-chrome-item { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; font-weight: 500; color: #64748b; }
+.dash-chrome-item i { color: #3b82f6; font-size: 0.85rem; }
+.dash-chrome-sep { color: #cbd5e1; }
+
+/* ── Stat tiles: colour-coded quick-glance counts, one per spec item ── */
+.stat-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.75rem; }
+@@media (max-width: 1199px) { .stat-grid { grid-template-columns: repeat(4, 1fr); } }
+@@media (max-width: 575px)  { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.stat-icon-chip {
+    width: 30px; height: 30px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+}
+.stat-caption { font-size: 0.72rem; font-weight: 600; color: #64748b; margin-top: 0.3rem; }
+
+/* ── Bento grid ───────────────────────────────────────────── */
+.bento-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+@@media (max-width: 991px) { .bento-grid { grid-template-columns: 1fr; } }
+
+.bento-card {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid #e1e1e1;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.05);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.bento-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.09); }
+
+.bento-card-header {
+    display: flex; align-items: center; gap: 0.6rem;
+    margin-bottom: 0.85rem;
+}
+.bento-icon-chip {
+    width: 30px; height: 30px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+}
+.bento-card-title {
+    font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: #475569; margin: 0; flex: 1;
+}
+.bento-count {
+    font-size: 0.68rem; font-weight: 700; min-width: 22px; height: 22px; padding: 0 7px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50rem; flex-shrink: 0;
+}
+
+.bento-body { flex: 1; }
+.bento-item {
+    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+    padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9;
+}
+.bento-item:last-child { border-bottom: 0; }
+.bento-item-main { min-width: 0; }
+.bento-item-id { font-weight: 700; font-size: 0.85rem; }
+.bento-item-name { font-size: 0.85rem; margin-left: 0.3rem; }
+.bento-item-sub { color: #94a3b8; font-size: 0.74rem; margin-top: 2px; }
+.bento-empty { color: #94a3b8; font-size: 0.82rem; padding: 1rem 0; text-align: center; }
+.bento-card-footer { margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid #f1f5f9; }
+
+.modal-content.hf-modal { border-radius: 0.75rem; border: 1px solid #e1e1e1; }
+
+.dash-section-label { margin-top: 1.25rem; }
+.dash-section-label h6 { color: #0f172a; }
+
+@@keyframes dashFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.bento-card, .dashboard-stat-card { animation: dashFadeIn 0.4s ease both; }
+</style>
+}
+
+<div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+        <p class="text-muted small text-uppercase fw-bold mb-1" style="letter-spacing:2px;" id="greetingLabel">Welcome back</p>
+        <h2 class="serif-brand mb-1">@technician.Name @technician.Surname</h2>
+        <div class="dash-chrome-strip">
+            <span class="dash-chrome-item"><i class="bi bi-clock-fill"></i><span id="liveClock">--:--:--</span></span>
+            <span class="dash-chrome-sep">&middot;</span>
+            <span class="dash-chrome-item"><i class="bi bi-cloud-sun-fill"></i><span id="weatherText">Loading weather&hellip;</span></span>
+        </div>
+    </div>
+    <a asp-controller="LabTech" asp-action="Report" class="btn btn-dark rounded-pill px-4 shadow-sm">
+        <i class="bi bi-file-earmark-pdf me-2"></i>Generate Report
+    </a>
+</div>
+
+@* ── Stat tiles: one per spec dashboard item, quick-glance counts ── *@
+<div class="stat-grid mb-4">
+    @foreach (var key in statOrder)
+    {
+        var l = L(key);
+        var (toneBg, toneFg) = l.Tone;
+        <div class="glass-card p-3 dashboard-stat-card" style="cursor:pointer; border-bottom: 3px solid @toneFg;" role="button"
+             data-bs-toggle="modal" data-bs-target="#modal-@l.Key">
+            <span class="stat-icon-chip" style="background:@toneBg; color:@toneFg;"><i class="bi @l.Icon"></i></span>
+            <h2 class="serif-brand mb-0 mt-2" style="color:@toneFg;">@l.Items.Count</h2>
+            <p class="stat-caption mb-0">@l.Title</p>
+        </div>
+    }
+</div>
+
+@* ── Filters (spec: urgency, category, due time, request number) ── *@
+<div class="glass-card p-3 mb-4">
+    <partial name="_QueueFilters" model="filter" view-data="filterData" />
+    @if (filter.Any)
+    {
+        <div class="small text-muted mt-2"><i class="bi bi-funnel-fill me-1"></i>Filters apply to every count, card and list below.</div>
+    }
+</div>
+
+<div class="dash-section-label mb-3">
+    <h6 class="text-uppercase fw-bold small mb-0"><i class="bi bi-exclamation-triangle-fill text-danger me-1"></i>Needs Attention</h6>
+</div>
+<div class="bento-grid mb-4">
+    @foreach (var l in needsAttention)
+    {
+        <partial name="_QueueCard" model="l" />
+    }
+</div>
+
+<div class="dash-section-label mb-3">
+    <h6 class="text-uppercase fw-bold small mb-0"><i class="bi bi-list-task me-1"></i>Your Workflow</h6>
+</div>
+<div class="bento-grid mb-4">
+    @foreach (var l in yourWorkflow)
+    {
+        <partial name="_QueueCard" model="l" />
+    }
+</div>
+
+@foreach (var l in lists)
+{
+    <partial name="_QueueModal" model="new LabTechQueueModal { List = l, Filter = filter, Categories = categories, StockStatus = stockStatus, VerifiableIds = verifiableIds }" />
+}
+
+@section Scripts {
+<script>
+(function () {
+    var greetEl = document.getElementById('greetingLabel');
+    if (greetEl) {
+        var h = new Date().getHours();
+        greetEl.textContent = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    }
+
+    // Filtering from inside a modal reloads the page - re-open that modal.
+    var open = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(open ?? ""));
+    if (open && /^modal-[a-z]+$/.test(open)) {
+        var el = document.getElementById(open);
+        if (el) new bootstrap.Modal(el).show();
+    }
+
+    // Header chrome: live clock + weather (Gqeberha) - same component as
+    // Patient/Admin's dashboard, Open-Meteo, no API key required.
+    var clockEl = document.getElementById('liveClock');
+    function tick() {
+        if (!clockEl) return;
+        clockEl.textContent = new Date().toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    tick();
+    setInterval(tick, 1000);
+
+    var weatherEl = document.getElementById('weatherText');
+    if (weatherEl) {
+        fetch('https://api.open-meteo.com/v1/forecast?latitude=-33.9608&longitude=25.6022&current=temperature_2m,weather_code,wind_speed_10m&wind_speed_unit=kmh&timezone=Africa%2FJohannesburg')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var c = data && data.current;
+                if (!c) { weatherEl.textContent = 'Weather unavailable'; return; }
+                var codeMap = {
+                    0: 'Clear sky', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Overcast',
+                    45: 'Fog', 48: 'Fog', 51: 'Drizzle', 53: 'Drizzle', 55: 'Drizzle',
+                    61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 71: 'Snow', 80: 'Showers',
+                    81: 'Showers', 82: 'Heavy showers', 95: 'Thunderstorm'
+                };
+                var parts = [Math.round(c.temperature_2m) + '°C'];
+                if (codeMap[c.weather_code]) parts.push(codeMap[c.weather_code]);
+                parts.push('Gqeberha');
+                weatherEl.textContent = parts.join(' · ');
+            })
+            .catch(function () { weatherEl.textContent = 'Weather unavailable'; });
+    }
+})();
+</script>
+}

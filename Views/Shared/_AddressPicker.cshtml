@@ -1,0 +1,121 @@
+@model Project.Models.AddressPickerModel
+@* Province -> Town -> Suburb cascading dropdowns. Picking a suburb fills the postal code.
+   Posts: City (town name), Suburb (suburb name), PostalCode and SuburbId. If the location
+   tables are empty it falls back to plain text boxes so nobody is ever blocked. *@
+<div class="row g-3 mb-3 address-picker" id="addressPicker"
+     data-suburb-id="@Model.SuburbId" data-city="@Model.City" data-suburb="@Model.Suburb" data-postal="@Model.PostalCode"
+     data-base="@Url.Content("~/Location")">
+    <div class="col-md-6">
+        <label class="form-label small fw-semibold">Province <span class="text-danger">*</span></label>
+        <select id="province" name="ProvinceId" class="form-select" disabled required><option value="">Loading...</option></select>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label small fw-semibold">Town / City <span class="text-danger">*</span></label>
+        <select id="city" name="City" class="form-select" disabled required><option value="">Select a province first</option></select>
+        <div class="invalid-feedback">Town/city is required.</div>
+    </div>
+    <div class="col-md-8">
+        <label class="form-label small fw-semibold">Suburb <span class="text-danger">*</span></label>
+        <select id="suburb" name="Suburb" class="form-select" disabled required><option value="">Select a town first</option></select>
+        <div class="invalid-feedback">Suburb is required.</div>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label small fw-semibold">Postal Code <span class="text-danger">*</span></label>
+        <input type="text" id="postalCode" name="PostalCode" class="form-control" placeholder="Auto" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" required readonly value="@Model.PostalCode">
+        <div class="invalid-feedback" id="postalCodeFeedback">Postal code must be 4 digits.</div>
+    </div>
+    <input type="hidden" id="suburbId" name="SuburbId" />
+</div>
+<script>
+(function () {
+    var box = document.getElementById('addressPicker');
+    if (!box) return;
+    var base = box.dataset.base;
+    var prov = document.getElementById('province'), town = document.getElementById('city'),
+        sub = document.getElementById('suburb'), postal = document.getElementById('postalCode'),
+        subId = document.getElementById('suburbId');
+
+    function get(url) { return fetch(url, { headers: { 'Accept': 'application/json' } }).then(function (r) { return r.json(); }); }
+    function fill(sel, items, placeholder, valueKey) {
+        sel.innerHTML = '';
+        var o = document.createElement('option'); o.value = ''; o.textContent = placeholder; sel.appendChild(o);
+        items.forEach(function (i) {
+            var opt = document.createElement('option');
+            opt.value = valueKey ? i[valueKey] : i.name; opt.textContent = i.name; opt.dataset.id = i.id;
+            if (i.postalCode) opt.dataset.postal = i.postalCode;
+            sel.appendChild(opt);
+        });
+        if (items.length > 0 && sel !== prov) {
+            var other = document.createElement('option'); other.value = '__other__'; other.textContent = "My " + (sel === town ? "town" : "suburb") + " isn't listed - type it in";
+            sel.appendChild(other);
+        }
+        sel.disabled = items.length === 0;
+    }
+    function selectByDataId(sel, id) {
+        for (var i = 0; i < sel.options.length; i++) if (sel.options[i].dataset.id == id) { sel.selectedIndex = i; return; }
+    }
+
+    function loadTowns(provinceId) {
+        fill(town, [], 'Loading...'); fill(sub, [], 'Select a town first'); postal.value = ''; subId.value = '';
+        if (!provinceId) { fill(town, [], 'Select a province first'); return Promise.resolve(); }
+        return get(base + '/Towns?provinceId=' + provinceId).then(function (t) { fill(town, t, 'Select town / city'); });
+    }
+    function loadSuburbs(townId) {
+        fill(sub, [], 'Loading...'); postal.value = ''; subId.value = '';
+        if (!townId) { fill(sub, [], 'Select a town first'); return Promise.resolve(); }
+        return get(base + '/Suburbs?townId=' + townId).then(function (s) { fill(sub, s, 'Select suburb'); });
+    }
+
+    // "Not listed" -> both town and suburb become text boxes and the postal code can be typed.
+    function manualEntry(cityVal, subVal) {
+        function toInput(sel, ph, v) {
+            var inp = document.createElement('input');
+            inp.type = 'text'; inp.id = sel.id; inp.name = sel.name; inp.className = 'form-control'; inp.placeholder = ph; inp.required = true; inp.maxLength = 100; inp.value = v || '';
+            sel.parentNode.replaceChild(inp, sel); return inp;
+        }
+        toInput(town, 'Type your town / city', cityVal); toInput(sub, 'Type your suburb', subVal);
+        postal.readOnly = false; postal.value = ''; postal.placeholder = 'e.g. 6001'; subId.value = '';
+        postal.addEventListener('input', function () { postal.value = postal.value.replace(/[^0-9]/g, ''); });
+    }
+
+    prov.addEventListener('change', function () { loadTowns(prov.value); });
+    town.addEventListener('change', function () {
+        if (town.value === '__other__') { manualEntry('', ''); return; }
+        var id = town.options[town.selectedIndex] && town.options[town.selectedIndex].dataset.id;
+        loadSuburbs(id);
+    });
+    sub.addEventListener('change', function () {
+        if (sub.value === '__other__') { manualEntry(town.value, ''); return; }
+        var o = sub.options[sub.selectedIndex];
+        postal.value = o && o.dataset.postal ? o.dataset.postal.trim() : '';
+        subId.value = o && o.dataset.id ? o.dataset.id : '';
+        postal.classList.remove('is-invalid');
+        sub.classList.remove('is-invalid');
+    });
+
+    function noData() {
+        fill(prov, [], 'Address list not loaded yet'); prov.disabled = true;
+        fill(town, [], 'Ask an administrator to import locations'); fill(sub, [], '-');
+    }
+
+    get(base + '/Provinces').then(function (list) {
+        if (!list || list.length === 0) { noData(); return; }
+        fill(prov, list, 'Select province', 'id'); prov.disabled = false;
+        var city = box.dataset.city, suburb = box.dataset.suburb, suburbId = box.dataset.suburbId;
+        if (!suburbId && !suburb) { fill(town, [], 'Select a province first'); return; }
+        // Pre-select the saved address (edit profile).
+        get(base + '/Resolve?suburbId=' + encodeURIComponent(suburbId || '') + '&town=' + encodeURIComponent(city || '') + '&suburb=' + encodeURIComponent(suburb || ''))
+            .then(function (r) {
+                if (!r || !r.found) { manualEntry(city, suburb); postal.value = box.dataset.postal || ''; return; }
+                prov.value = r.provinceId;
+                return loadTowns(r.provinceId).then(function () {
+                    selectByDataId(town, r.townId);
+                    return loadSuburbs(r.townId);
+                }).then(function () {
+                    selectByDataId(sub, r.suburbId);
+                    sub.dispatchEvent(new Event('change'));
+                });
+            });
+    }).catch(noData);
+})();
+</script>

@@ -1,0 +1,122 @@
+@model Project.Models.LabManager.QueueItem
+@*
+    Patient context shown once a test has been selected (CaptureResult and
+    VerifyResult). Spec: "the technician can view the patient's medical
+    conditions, allergies, and medication, as well as the doctor's clinical
+    notes." Only fields the Patient and Doctor subsystems capture are shown.
+*@
+@{
+    var conditions  = Model.PatientConditions  ?? new List<Project.Models.LabManager.ConditionNote>();
+    var allergies   = Model.PatientAllergies   ?? new List<Project.Models.LabManager.AllergyInfo>();
+    var medications = Model.PatientMedications ?? new List<Project.Models.LabManager.MedicationInfo>();
+    string key = "pc" + Model.Id;
+    // Inside a modal the card chrome is dropped (ViewData["Bare"] = true).
+    bool bare = ViewData["Bare"] as bool? == true;
+}
+
+<style>
+    .pc-item { padding: 0.65rem 0; border-bottom: 1px solid #f1f5f9; }
+    .pc-item:last-child { border-bottom: none; }
+</style>
+
+<div class="@(bare ? "" : "glass-card mb-4")">
+    <div class="@(bare ? "" : "px-4 pt-4 pb-0")">
+        <h6 class="text-muted text-uppercase fw-bold small mb-0">Patient Details</h6>
+        <p class="mb-0 mt-1">
+            <strong>@Model.PatientName</strong>
+            <span class="text-muted small">&bull; ID @Model.PatientIdNumber &bull; DOB @Model.PatientDob</span>
+        </p>
+    </div>
+
+    <div class="pt-tabs nav mt-3 border-bottom">
+        <button type="button" class="pt-tab active" data-bs-toggle="tab" data-bs-target="#@key-notes">
+            <i class="bi bi-journal-text"></i>Clinical Notes
+        </button>
+        <button type="button" class="pt-tab" data-bs-toggle="tab" data-bs-target="#@key-conditions">
+            <i class="bi bi-activity"></i>Conditions
+            <span class="badge bg-light text-muted rounded-pill">@conditions.Count</span>
+        </button>
+        <button type="button" class="pt-tab" data-bs-toggle="tab" data-bs-target="#@key-allergies">
+            <i class="bi bi-shield-exclamation"></i>Allergies
+            <span class="badge bg-light text-muted rounded-pill">@allergies.Count</span>
+        </button>
+        <button type="button" class="pt-tab" data-bs-toggle="tab" data-bs-target="#@key-medication">
+            <i class="bi bi-capsule"></i>Medication
+            <span class="badge bg-light text-muted rounded-pill">@medications.Count</span>
+        </button>
+    </div>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active p-4" id="@key-notes">
+            @if (string.IsNullOrWhiteSpace(Model.ClinicalNotes))
+            {
+                <p class="text-muted small mb-0">No clinical notes on this test request.</p>
+            }
+            else
+            {
+                <p class="small mb-0">@Model.ClinicalNotes</p>
+            }
+        </div>
+
+        <div class="tab-pane fade p-4" id="@key-conditions">
+            @if (!conditions.Any())
+            {
+                <p class="text-muted small mb-0">No medical conditions recorded.</p>
+            }
+            @foreach (var c in conditions)
+            {
+                <div class="pc-item">
+                    <div class="fw-medium small">@c.Condition</div>
+                    @if (!string.IsNullOrEmpty(c.DiagnosedOn))
+                    {
+                        <div class="text-muted" style="font-size:0.72rem;">Diagnosed: @c.DiagnosedOn</div>
+                    }
+                    @if (!string.IsNullOrEmpty(c.Note))
+                    {
+                        <div class="text-muted" style="font-size:0.72rem;">@c.Note</div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="tab-pane fade p-4" id="@key-allergies">
+            @if (!allergies.Any())
+            {
+                <p class="text-muted small mb-0">No allergies recorded.</p>
+            }
+            @foreach (var a in allergies)
+            {
+                <div class="pc-item">
+                    <span class="fw-medium small">@a.Name</span>
+                    @if (!string.IsNullOrEmpty(a.Severity))
+                    {
+                        <span class="text-muted small">&middot; @a.Severity</span>
+                    }
+                    @if (!string.IsNullOrEmpty(a.Note))
+                    {
+                        <div class="text-muted" style="font-size:0.72rem;">@a.Note</div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="tab-pane fade p-4" id="@key-medication">
+            @if (!medications.Any())
+            {
+                <p class="text-muted small mb-0">No current medication recorded.</p>
+            }
+            @foreach (var m in medications)
+            {
+                var detail = string.Join(" · ", new[] { m.Strength, m.Dose, m.Frequency }.Where(x => !string.IsNullOrEmpty(x)));
+                <div class="pc-item">
+                    <div class="fw-medium small">@m.Name</div>
+                    @if (!string.IsNullOrEmpty(detail))
+                    {
+                        <div class="text-muted" style="font-size:0.72rem;">@detail</div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+

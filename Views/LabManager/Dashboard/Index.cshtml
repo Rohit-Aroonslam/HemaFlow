@@ -1,0 +1,243 @@
+﻿@{
+    ViewData["Title"] = "Lab Manager Dashboard";
+}
+
+<style>
+    .stat-card {
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        cursor: pointer;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12) !important;
+        }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">Lab Manager Dashboard</h2>
+        <small class="text-muted">HemaFlow - Nelson Mandela Bay Haematology Laboratory</small>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <span class="text-muted small">@DateTime.Now.ToString("dddd, dd MMMM yyyy")</span>
+        <a asp-controller="Profile" asp-action="Index" class="btn btn-outline-dark btn-sm">
+            <i class="bi bi-person-circle me-1"></i>My Profile
+        </a>
+    </div>
+</div>
+
+<!-- Stats cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                    <i class="bi bi-grid-3x3-gap fs-4 text-primary"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Test Categories</div>
+                    <div class="fs-3 fw-bold">@ViewBag.TotalCategories</div>
+                </div>
+            </div>
+            <a asp-controller="TestCategory" asp-action="Index" class="stretched-link"></a>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                    <i class="bi bi-clipboard2-pulse fs-4 text-success"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Test Types</div>
+                    <div class="fs-3 fw-bold">@ViewBag.TotalTestTypes</div>
+                </div>
+            </div>
+            <a asp-controller="TestType" asp-action="Index" class="stretched-link"></a>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                    <i class="bi bi-boxes fs-4 text-warning"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Consumables</div>
+                    <div class="fs-3 fw-bold">@ViewBag.TotalConsumables</div>
+                </div>
+            </div>
+            <a asp-controller="Consumable" asp-action="Index" class="stretched-link"></a>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 stat-card @(ViewBag.TotalLowStock > 0 ? "border-danger border" : "")">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-danger bg-opacity-10 p-3">
+                    <i class="bi bi-exclamation-triangle fs-4 text-danger"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Low Stock Items</div>
+                    <div class="fs-3 fw-bold text-danger">@ViewBag.TotalLowStock</div>
+                </div>
+            </div>
+            <a asp-controller="Consumable" asp-action="Index" class="stretched-link"></a>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-dark bg-opacity-10 p-3">
+                    <i class="bi bi-cart3 fs-4 text-dark"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Total Orders</div>
+                    <div class="fs-3 fw-bold">@ViewBag.TotalOrders</div>
+                </div>
+            </div>
+            <a asp-controller="Order" asp-action="Index" class="stretched-link"></a>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                    <i class="bi bi-person-badge fs-4 text-info"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Technicians</div>
+                    <div class="fs-3 fw-bold">@ViewBag.TotalTechnicians</div>
+                </div>
+            </div>
+            <a asp-controller="Technician" asp-action="Index" class="stretched-link"></a>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-secondary bg-opacity-10 p-3">
+                    <i class="bi bi-person-vcard fs-4 text-secondary"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Doctors</div>
+                    <div class="fs-3 fw-bold">@ViewBag.TotalDoctors</div>
+                </div>
+            </div>
+            <a asp-controller="LMDoctor" asp-action="Index" class="stretched-link"></a>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                    <i class="bi bi-truck fs-4 text-primary"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Suppliers</div>
+                    <div class="fs-3 fw-bold">@ViewBag.TotalSuppliers</div>
+                </div>
+            </div>
+            <a asp-controller="Supplier" asp-action="Index" class="stretched-link"></a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Low stock alert table -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center pt-3">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Low Stock Alerts</h5>
+                <a asp-controller="Order" asp-action="Create" class="btn btn-sm btn-outline-danger">Create Order</a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Consumable</th>
+                            <th>Stock</th>
+                            <th>Reorder Level</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (ViewBag.LowStockItems != null && ((IEnumerable<dynamic>)ViewBag.LowStockItems).Any())
+                        {
+                            foreach (var item in ViewBag.LowStockItems)
+                            {
+                                <tr class="table-danger">
+                                    <td class="ps-4"><strong>@item.Name</strong></td>
+                                    <td class="text-danger fw-bold">@item.QuantityOnHand</td>
+                                    <td>@item.ReorderLevel</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="3" class="text-center text-success py-3">
+                                    <i class="bi bi-check-circle me-2"></i>All stock levels are healthy.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent orders -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center pt-3">
+                <h5 class="mb-0"><i class="bi bi-cart3 text-dark me-2"></i>Recent Orders</h5>
+                <a asp-controller="Order" asp-action="Index" class="btn btn-sm btn-outline-secondary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Order No.</th>
+                            <th>Supplier</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (ViewBag.RecentOrders != null && ((IEnumerable<dynamic>)ViewBag.RecentOrders).Any())
+                        {
+                            foreach (var o in ViewBag.RecentOrders)
+                            {
+                                string badge = o.Status == "Complete" ? "success" :
+                                o.Status == "Partial" ? "warning" :
+                                o.Status == "Cancelled" ? "danger" : "info";
+                                <tr>
+                                    <td class="ps-4"><strong>@o.OrderNumber</strong></td>
+                                    <td>@o.Supplier?.Name</td>
+                                    <td><span class="badge bg-@badge">@o.Status</span></td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="3" class="text-center text-muted py-3">No orders yet.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick nav -->
+<div class="mt-4 d-flex gap-2 flex-wrap">
+    <a asp-controller="TestCategory" asp-action="Index" class="btn btn-outline-primary"><i class="bi bi-grid me-1"></i>Categories</a>
+    <a asp-controller="TestType" asp-action="Index" class="btn btn-outline-primary"><i class="bi bi-clipboard2-pulse me-1"></i>Test Types</a>
+    <a asp-controller="Consumable" asp-action="Index" class="btn btn-outline-primary"><i class="bi bi-boxes me-1"></i>Consumables</a>
+    <a asp-controller="Supplier" asp-action="Index" class="btn btn-outline-primary"><i class="bi bi-truck me-1"></i>Suppliers</a>
+    <a asp-controller="Order" asp-action="Index" class="btn btn-outline-primary"><i class="bi bi-cart3 me-1"></i>Orders</a>
+    <a asp-controller="Technician" asp-action="Index" class="btn btn-outline-primary"><i class="bi bi-person-badge me-1"></i>Technicians</a>
+    <a asp-controller="LMDoctor" asp-action="Index" class="btn btn-outline-primary"><i class="bi bi-person-vcard me-1"></i>Doctors</a>
+    <a asp-controller="Report" asp-action="Index" class="btn btn-outline-danger"><i class="bi bi-file-earmark-pdf me-1"></i>Reports</a>
+    <a asp-controller="ActivityLog" asp-action="Index" class="btn btn-outline-dark"><i class="bi bi-clock-history me-1"></i>Activity Log</a>
+    <a asp-controller="Profile" asp-action="Index" class="btn btn-outline-dark"><i class="bi bi-person-circle me-1"></i>My Profile</a>
+</div>

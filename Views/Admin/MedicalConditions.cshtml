@@ -1,0 +1,222 @@
+﻿@model Project.Models.MedicalConditionsViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Medical Conditions | Hema Flow";
+}
+
+<div class="row align-items-center mb-4 g-3">
+    <div class="col-md-6">
+        <h4 class="fw-700 mb-1" style="color: #0f172a;">Medical Conditions</h4>
+        <p class="text-muted small mb-0">Maintain the list of medical conditions patients can record in their health profiles.</p>
+    </div>
+    <div class="col-md-6 d-flex justify-content-md-end">
+        <a asp-controller="Admin" asp-action="SystemArchive" class="btn btn-outline-secondary py-2 px-3 me-2"><i class="bi bi-archive me-2"></i>View Archived</a>
+        <a asp-action="ExportConditions" asp-controller="Admin" class="btn btn-outline-secondary py-2 px-3 me-2"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>Export PDF</a><a asp-action="CreateCondition" asp-controller="Admin" class="btn btn-dark py-2 px-3">
+            <i class="bi bi-plus-lg me-2"></i>Add Condition
+        </a>
+    </div>
+</div>
+
+@{
+    var pendingConditionCount = Project.Models.PendingApprovalStore.Items.Count(p => p.Status == "Pending" && p.EntityType == "Condition");
+}
+@if (pendingConditionCount > 0)
+{
+    <a asp-controller="Admin" asp-action="PendingApprovals" class="text-decoration-none">
+        <div class="alert rounded-0 border-0 border-start border-3 mb-4 d-flex align-items-center gap-2" style="border-color:#d97706 !important; background:#fffbeb;">
+            <i class="bi bi-clock-history text-warning"></i>
+            <span class="small text-dark">@pendingConditionCount patient-submitted condition(s) awaiting review.</span>
+        </div>
+    </a>
+}
+
+@* Search & Filter *@
+<div class="row g-3 mb-4">
+    <div class="col-md-8">
+        <div class="bg-white border p-2 px-3 d-flex align-items-center" style="height:42px;">
+            <div class="input-group">
+                <span class="input-group-text bg-transparent border-0 text-muted ps-0"><i class="bi bi-search"></i></span>
+                <input type="text" id="conditionSearch" class="form-control border-0 shadow-none small text-dark" placeholder="Search by condition name or ICD-10 code...">
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="d-flex gap-2">
+            <select id="categoryFilter" class="form-select border bg-white small rounded-0" style="height:42px;">
+                <option value="">All Categories</option>
+                @foreach (var cat in Model.Categories)
+                {
+                    <option value="@cat.Name">@cat.Name</option>
+                }
+            </select>
+            <button type="button" id="conditionClearFilters" class="btn btn-outline-secondary py-2 px-3 text-nowrap" style="font-size:0.8rem;">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-0">
+    <div class="card-header justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-clipboard2-pulse text-primary"></i>
+            <span>Conditions List</span>
+        </div>
+        <span class="text-muted x-small" id="conditionResultCount">@Model.Conditions.Count condition(s)</span>
+    </div>
+    <div class="p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size:0.82rem;" id="conditionsTable">
+                <thead>
+                    <tr class="bg-light text-muted text-uppercase fw-600" style="font-size:0.68rem; border-bottom:1px solid #e2e8f0;">
+                        <th class="ps-3 py-2">Condition Name</th>
+                        <th class="py-2">Category</th>
+                        <th class="py-2">ICD-10 Code</th>
+                        <th class="text-end pe-3 py-2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.Conditions)
+                    {
+                        <tr style="border-bottom:1px solid #f1f5f9;" data-name="@c.Name.ToLower()" data-category="@c.Category" data-icd="@c.Icd10Code.ToLower()">
+                            <td class="ps-3 py-3 fw-600 text-dark">@c.Name</td>
+                            <td>
+                                <span class="patient-status-pill text-primary border-primary bg-white" style="font-size:0.65rem;">@c.Category</span>
+                            </td>
+                            <td class="text-muted font-monospace">@c.Icd10Code</td>
+                            <td class="text-end pe-3">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button class="btn btn-outline-secondary py-1 px-2" style="font-size:0.72rem !important;"
+                                            data-bs-toggle="modal" data-bs-target="#editConditionModal"
+                                            onclick="openEditCondition('@c.Id','@c.Name','@c.Icd10Code','@c.Category')">
+                                        Edit
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger py-1 px-2" style="font-size:0.72rem !important;"
+                                            data-bs-toggle="modal" data-bs-target="#archiveConditionModal"
+                                            onclick="openArchiveCondition('@c.Id','@c.Name')">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    <tr id="conditionEmptyState" style="display:none;">
+                        <td colspan="4" class="text-center text-muted py-4">
+                            <i class="bi bi-search me-2"></i>No conditions match your filters.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@* Edit Modal *@
+<div class="modal fade" id="editConditionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 bg-white" style="border-radius:0;">
+            <div class="modal-header border-bottom px-4 py-3 justify-content-between">
+                <h6 class="fw-700 text-dark mb-0"><i class="bi bi-pencil text-primary me-2"></i>Edit Condition</h6>
+                <button type="button" class="btn-close shadow-none small" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form asp-action="UpdateCondition" asp-controller="Admin" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="editCondId" name="Id" />
+                    <div class="mb-3">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Condition Name</label>
+                        <input type="text" id="editCondName" name="Name" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small" required>
+                    </div>
+                    <div class="row g-2 mb-4">
+                        <div class="col-6">
+                            <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">ICD-10 Code</label>
+                            <input type="text" id="editCondIcd" name="Icd10Code" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Category</label>
+                            <select id="editCondCat" name="CategoryId" class="form-select bg-light border-0 rounded-0 shadow-none py-2 small">
+                                @foreach (var cat in Model.Categories)
+                                {
+                                    <option value="@cat.Id" data-name="@cat.Name">@cat.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end pt-2 border-top">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-dark">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openEditCondition(id, name, icd, category) {
+            document.getElementById('editCondId').value   = id;
+            document.getElementById('editCondName').value = name;
+            document.getElementById('editCondIcd').value  = icd;
+            const sel = document.getElementById('editCondCat');
+            for (let o of sel.options) { if (o.dataset.name === category) { o.selected = true; break; } }
+        }
+
+        // Client-side search filter
+        function openArchiveCondition(id, name) {
+            document.getElementById('archiveConditionId').value = id;
+            document.getElementById('archiveConditionName').textContent = name;
+            document.getElementById('archiveConditionReason').value = '';
+        }
+        document.getElementById('conditionSearch').addEventListener('input', filterTable);
+        document.getElementById('categoryFilter').addEventListener('change', filterTable);
+        document.getElementById('conditionClearFilters').addEventListener('click', function () {
+            document.getElementById('conditionSearch').value = '';
+            document.getElementById('categoryFilter').value = '';
+            filterTable();
+        });
+
+        const conditionTotal = document.querySelectorAll('#conditionsTable tbody tr:not(#conditionEmptyState)').length;
+        function filterTable() {
+            const q   = document.getElementById('conditionSearch').value.toLowerCase();
+            const cat = document.getElementById('categoryFilter').value;
+            let visible = 0;
+            document.querySelectorAll('#conditionsTable tbody tr:not(#conditionEmptyState)').forEach(row => {
+                const nameMatch = row.dataset.name.includes(q) || row.dataset.icd.includes(q);
+                const catMatch  = !cat || row.dataset.category === cat;
+                const match = nameMatch && catMatch;
+                row.style.display = match ? '' : 'none';
+                if (match) visible++;
+            });
+            document.getElementById('conditionEmptyState').style.display = visible === 0 ? '' : 'none';
+            document.getElementById('conditionResultCount').textContent = 'Showing ' + visible + ' of ' + conditionTotal;
+        }
+    </script>
+}
+
+@* Archive Condition Modal (with reason) *@
+<div class="modal fade" id="archiveConditionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 bg-white" style="border-radius:0;">
+            <div class="modal-header border-bottom px-4 py-3 justify-content-between">
+                <h6 class="fw-700 text-dark mb-0"><i class="bi bi-trash3 text-danger me-2"></i>Archive Condition</h6>
+                <button type="button" class="btn-close shadow-none small" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="small text-muted">Archiving <strong id="archiveConditionName" class="text-dark"></strong>. It can be restored later from the archive.</p>
+                <form asp-action="DeleteCondition" asp-controller="Admin" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="archiveConditionId" name="id" />
+                    <div class="mb-4">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Reason for Archiving <span class="text-danger">*</span></label>
+                        <textarea id="archiveConditionReason" name="reason" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small" rows="2" required placeholder="e.g. Duplicate entry, incorrect classification..."></textarea>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end pt-2 border-top">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Archive</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

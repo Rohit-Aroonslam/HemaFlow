@@ -1,0 +1,103 @@
+@{
+    Layout = "_LabTechLayout";
+    ViewData["Title"] = "My Tests";
+
+    var technician = (Technician)ViewBag.CurrentTechnician;
+    var items = (List<QueueItem>)ViewBag.Items;
+    var initialFilter = (string)ViewBag.InitialFilter;
+
+    string UrgClass(string u) => u == "STAT" ? "badge-stat" : u == "Urgent" ? "badge-urgent" : "badge-routine";
+
+    int overdueCount = items.Count(i => i.IsOverdue);
+    int statCount    = items.Count(i => i.Urgency == "STAT");
+    int urgentCount  = items.Count(i => i.Urgency == "Urgent");
+    int routineCount = items.Count(i => i.Urgency == "Routine");
+}
+
+<div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+        <h2 class="serif-brand">My Tests</h2>
+        <p class="text-muted mb-0">Tests you've accepted and are currently working on, @technician.Name @technician.Surname.</p>
+    </div>
+</div>
+
+<div class="glass-card p-3 mb-4">
+    <div class="d-flex gap-2 flex-wrap">
+        <button onclick="filterStatus('all')" id="btn-all" class="btn btn-sm rounded-pill px-3 btn-outline-secondary filter-btn">All (@items.Count)</button>
+        <button onclick="filterStatus('overdue')" id="btn-overdue" class="btn btn-sm rounded-pill px-3 btn-outline-secondary filter-btn">Overdue (@overdueCount)</button>
+        <button onclick="filterStatus('stat')" id="btn-stat" class="btn btn-sm rounded-pill px-3 btn-outline-secondary filter-btn">STAT (@statCount)</button>
+        <button onclick="filterStatus('urgent')" id="btn-urgent" class="btn btn-sm rounded-pill px-3 btn-outline-secondary filter-btn">Urgent (@urgentCount)</button>
+        <button onclick="filterStatus('routine')" id="btn-routine" class="btn btn-sm rounded-pill px-3 btn-outline-secondary filter-btn">Routine (@routineCount)</button>
+    </div>
+</div>
+
+<div class="glass-card p-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr class="text-muted small">
+                    <th>REQUEST</th>
+                    <th>TEST TYPE</th>
+                    <th>SAMPLE</th>
+                    <th>URGENCY</th>
+                    <th>EXPECTED BY</th>
+                    <th class="text-end">ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody id="myTestsBody">
+                @foreach (var item in items)
+                {
+                    <tr data-urgency="@item.Urgency.ToLower()" data-overdue="@item.IsOverdue.ToString().ToLower()">
+                        <td class="fw-bold">@item.RequestNumber</td>
+                        <td>@item.TestTypeName</td>
+                        <td class="text-muted">@item.SampleTypeName</td>
+                        <td><span class="badge @UrgClass(item.Urgency) rounded-pill px-3">@item.Urgency</span></td>
+                        <td>
+                            <div>@(item.DueAt?.ToString("HH:mm") ?? "-")</div>
+                            <span class="small @(item.IsOverdue ? "fw-semibold text-danger" : item.IsNearingTat ? "fw-semibold text-warning" : "text-muted")"><i class="bi bi-hourglass me-1"></i>@item.DueText</span>
+                        </td>
+                        <td class="text-end">
+                            <a asp-controller="LabTech" asp-action="CaptureResult" asp-route-id="@item.Id" class="btn btn-dark btn-sm rounded-pill px-3">Capture</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div id="noResults" class="text-center text-muted py-4" style="display:none;">
+            <i class="bi bi-inbox fs-3 d-block mb-2 opacity-40"></i>
+            No tests match this filter.
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterStatus(value) {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('btn-dark');
+                btn.classList.add('btn-outline-secondary');
+            });
+            const activeBtn = document.getElementById('btn-' + value);
+            if (activeBtn) {
+                activeBtn.classList.remove('btn-outline-secondary');
+                activeBtn.classList.add('btn-dark');
+            }
+            const rows = document.querySelectorAll('#myTestsBody tr');
+            let visible = 0;
+            rows.forEach(row => {
+                const show = value === 'all'
+                    || (value === 'overdue' && row.dataset.overdue === 'true')
+                    || (row.dataset.urgency === value);
+                row.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+            document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const initial = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(initialFilter));
+            const valid = ['all', 'overdue', 'stat', 'urgent', 'routine'];
+            filterStatus(valid.includes(initial) ? initial : 'all');
+        });
+    </script>
+}

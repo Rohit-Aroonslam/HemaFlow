@@ -1,0 +1,337 @@
+﻿@model IEnumerable<Project.Models.Doctor.DoctorAlertItem>
+@{
+    Layout = "_DoctorLayout";
+    ViewData["Title"] = "Abnormal Result Alerts";
+
+    var fromDate = Context?.Request?.Query["fromDate"].ToString();
+    var toDate = Context?.Request?.Query["toDate"].ToString();
+
+    var todayDate = Project.Services.SastTime.ToSast(DateTime.UtcNow).ToString("yyyy-MM-dd");
+    var displayFromDate = string.IsNullOrEmpty(fromDate) ? Project.Services.SastTime.ToSast(DateTime.UtcNow).AddDays(-5).ToString("yyyy-MM-dd") : fromDate;
+    var displayToDate = string.IsNullOrEmpty(toDate) ? todayDate : toDate;
+    string doctorName = ViewBag.DoctorName ?? "";
+}
+
+<div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+        <h4 class="fw-700 mb-1" style="color: #0f172a;">Alerts</h4>
+        <p class="text-muted mb-0">Abnormal results from your test requests within the selected period.</p>
+    </div>
+</div>
+
+<!-- TOAST CONTAINER FOR SUCCESS/ERROR POPUPS -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+    <div id="liveToast" class="toast align-items-center text-white border-0 shadow-lg rounded-3" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body fw-semibold" id="toastMessage">
+                Action completed successfully.
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="glass-card p-3 mb-4">
+    <form method="get" asp-controller="Doctor" asp-action="Alerts" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label small text-muted text-uppercase fw-bold mb-1">Start Date</label>
+            <input type="date" name="fromDate" class="form-control bg-light border-0" value="@displayFromDate" max="@todayDate">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small text-muted text-uppercase fw-bold mb-1">End Date</label>
+            <input type="date" name="toDate" class="form-control bg-light border-0" value="@displayToDate" max="@todayDate">
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+            <button type="submit" class="btn btn-dark rounded-3 px-4 flex-fill">
+                <i class="bi bi-funnel me-1"></i>Filter
+            </button>
+            <a asp-controller="Doctor" asp-action="Alerts" class="btn btn-outline-secondary rounded-3 px-4 flex-fill text-nowrap">
+                <i class="bi bi-x-circle me-1"></i>Reset Filter
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="row g-3">
+    @if (!Model.Any())
+    {
+        <div class="col-12">
+            <div class="glass-card p-5 text-center text-muted">
+                <i class="bi bi-check-circle fs-2 d-block mb-2 text-success opacity-75"></i>
+                No abnormal results in this period.
+            </div>
+        </div>
+    }
+
+    @foreach (var a in Model)
+    {
+        <div class="col-12">
+            <div class="glass-card p-4" style="border-left: 4px solid #f43f5e;">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+                            <span class="fw-bold">@a.Test</span>
+                            <span class="badge @a.UrgClass rounded-3 px-3">@a.Urgency</span>
+                        </div>
+                        <p class="text-muted small mb-1">
+                            Patient: <strong>@a.Patient</strong> &nbsp;|&nbsp;
+                            Request: <strong>@a.Req</strong> &nbsp;|&nbsp;
+                            Reported: <strong>@a.Reported</strong>
+                        </p>
+                        <p class="mb-0">
+                            Result: <strong class="text-danger">@a.Result</strong>
+                            &nbsp;|&nbsp;
+                            Normal Range: @a.Range
+                        </p>
+                    </div>
+                    <div class="d-flex gap-2 flex-shrink-0 align-items-center">
+                        <a href="@Url.Action("CompletedResults", "Doctor", new { id = a.TestRequestId, test = a.Test })"
+                           class="btn btn-sm btn-outline-secondary rounded-3 px-3">View Results</a>
+
+                        <button type="button" class="btn btn-sm btn-dark rounded-3 px-3"
+                                data-req="@a.TestRequestId" data-patient="@a.Patient" data-email="@a.Email" data-test="@a.Test" data-result="@a.Result"
+                                onclick="openEmailModal(this.dataset.req, this.dataset.patient, this.dataset.email, this.dataset.test, this.dataset.result)">
+                            <i class="bi bi-envelope me-1"></i>Email Results
+                        </button>
+
+                        <button type="button" class="btn btn-sm btn-outline-dark rounded-3 px-3"
+                                data-req="@a.TestRequestId" data-patient="@a.Patient" data-email="@a.Email" data-test="@a.Test"
+                                onclick="openAppointmentModal(this.dataset.req, this.dataset.patient, this.dataset.email, this.dataset.test)">
+                            <i class="bi bi-calendar-event me-1"></i>Request Appointment
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- ════════ EMAIL RESULTS MODAL ════════ -->
+<div class="modal fade" id="emailResultsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <form id="emailForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-header bg-dark text-white px-4 py-3">
+                    <h5 class="modal-title fs-6"><i class="bi bi-envelope-paper me-2"></i>Email Test Results Report</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="emailValidationAlert" class="alert alert-danger d-none py-2 small mb-3">
+                        <i class="bi bi-exclamation-circle-fill me-1"></i> Please ensure all fields are filled.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small text-muted fw-bold">Recipient Patient</label>
+                        <input type="text" id="emailPatientNameDisplay" class="form-control bg-light border-0" readonly />
+                        <input type="hidden" name="requestId" id="emailRequestId" />
+                        <input type="hidden" name="patientName" id="emailPatientName" />
+                        <input type="hidden" name="patientEmail" id="emailPatientEmail" />
+                        <input type="hidden" name="testName" id="emailTestName" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small text-muted fw-bold">Subject</label>
+                        <input type="text" name="subject" id="emailSubject" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small text-muted fw-bold">Custom Message / Doctor's Note</label>
+                        <textarea name="messageBody" id="emailMessage" rows="4" class="form-control" placeholder="Type notes or instructions for the patient regarding this result..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer px-4 py-3 bg-light rounded-bottom-3">
+                    <button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" onclick="submitEmailForm()" class="btn btn-dark rounded-3 px-4"><i class="bi bi-send me-1"></i> Send Email</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ════════ REQUEST APPOINTMENT MODAL ════════ -->
+<div class="modal fade" id="appointmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <form id="appointmentForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-header bg-dark text-white px-4 py-3">
+                    <h5 class="modal-title fs-6"><i class="bi bi-calendar-plus me-2"></i>Book Patient Appointment</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="apptValidationAlert" class="alert alert-danger d-none py-2 small mb-3">
+                        <i class="bi bi-exclamation-circle-fill me-1"></i> <span id="apptValidationErrorText">Please ensure all fields are filled.</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small text-muted fw-bold">Patient</label>
+                        <input type="text" id="apptPatientNameDisplay" class="form-control bg-light border-0" readonly />
+                        <input type="hidden" name="requestId" id="apptRequestId" />
+                        <input type="hidden" name="patientName" id="apptPatientName" />
+                        <input type="hidden" name="patientEmail" id="apptPatientEmail" />
+                        <input type="hidden" name="testName" id="apptTestName" />
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-7">
+                            <label class="form-label small text-muted fw-bold">Appointment Date</label>
+                            <input type="date" name="appointmentDate" id="apptDate" class="form-control" min="@todayDate" value="@todayDate" />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small text-muted fw-bold">Time Slot (1 Hour)</label>
+                            <select name="appointmentTime" id="apptTime" class="form-select">
+                                <option value="">- Select Time -</option>
+                                <option value="09:00 AM - 10:00 AM">09:00 AM - 10:00 AM</option>
+                                <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
+                                <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
+                                <option value="01:00 PM - 02:00 PM">01:00 PM - 02:00 PM</option>
+                                <option value="02:00 PM - 03:00 PM">02:00 PM - 03:00 PM</option>
+                                <option value="03:00 PM - 04:00 PM">03:00 PM - 04:00 PM</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small text-muted fw-bold">Reason / Consultation Notes</label>
+                        <textarea name="notes" id="apptNotes" rows="3" class="form-control" placeholder="Discuss abnormal test result..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer px-4 py-3 bg-light rounded-bottom-3">
+                    <button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" onclick="submitAppointmentForm()" class="btn btn-dark rounded-3 px-4"><i class="bi bi-check2-circle me-1"></i> Confirm Booking</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let emailModalInstance = null;
+        let appointmentModalInstance = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const emailModalEl = document.getElementById('emailResultsModal');
+            const apptModalEl = document.getElementById('appointmentModal');
+
+            if (emailModalEl) emailModalInstance = new bootstrap.Modal(emailModalEl);
+            if (apptModalEl) appointmentModalInstance = new bootstrap.Modal(apptModalEl);
+        });
+
+        function showToast(message, isSuccess = true) {
+            const toastEl = document.getElementById('liveToast');
+            const toastMsg = document.getElementById('toastMessage');
+            if (toastEl && toastMsg) {
+                toastMsg.textContent = message;
+                toastEl.className = `toast align-items-center text-white border-0 shadow-lg rounded-3 ${isSuccess ? 'bg-success' : 'bg-danger'}`;
+                new bootstrap.Toast(toastEl, { delay: 4000 }).show();
+            }
+        }
+
+        function openEmailModal(requestId, patientName, patientEmail, testName, resultValue) {
+            document.getElementById('emailRequestId').value = requestId;
+            document.getElementById('emailValidationAlert').classList.add('d-none');
+            document.getElementById('emailPatientNameDisplay').value = `${patientName} (${patientEmail})`;
+            document.getElementById('emailPatientName').value = patientName;
+            document.getElementById('emailPatientEmail').value = patientEmail;
+            document.getElementById('emailTestName').value = testName;
+            document.getElementById('emailSubject').value = `Urgent Test Results: ${testName} (${resultValue})`;
+            document.getElementById('emailMessage').value = `Dear ${patientName},\n\nPlease review your test results report regarding your recent diagnostic screening for ${testName}.\n\nBest regards,\nDr. @doctorName`;
+
+            if (emailModalInstance) emailModalInstance.show();
+        }
+
+        async function submitEmailForm() {
+            const subject = document.getElementById('emailSubject').value.trim();
+            const message = document.getElementById('emailMessage').value.trim();
+            const alertBox = document.getElementById('emailValidationAlert');
+
+            if (!subject || !message) {
+                alertBox.classList.remove('d-none');
+                return;
+            }
+            alertBox.classList.add('d-none');
+
+            const form = document.getElementById('emailForm');
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('@Url.Action("SendTestResultsEmail", "Doctor")', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server returned status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (emailModalInstance) emailModalInstance.hide();
+                showToast(data.message, data.success);
+            } catch (err) {
+                console.error(err);
+                if (emailModalInstance) emailModalInstance.hide();
+                showToast("Failed to send email. Please check server logs.", false);
+            }
+        }
+
+        function openAppointmentModal(requestId, patientName, patientEmail, testName) {
+            document.getElementById('apptRequestId').value = requestId;
+            document.getElementById('apptValidationAlert').classList.add('d-none');
+            document.getElementById('apptPatientNameDisplay').value = `${patientName} (${patientEmail})`;
+            document.getElementById('apptPatientName').value = patientName;
+            document.getElementById('apptPatientEmail').value = patientEmail;
+            document.getElementById('apptTestName').value = testName;
+            document.getElementById('apptNotes').value = `Consultation required for abnormal result: ${testName}`;
+
+            if (appointmentModalInstance) appointmentModalInstance.show();
+        }
+
+        async function submitAppointmentForm() {
+            const date = document.getElementById('apptDate').value;
+            const time = document.getElementById('apptTime').value;
+            const notes = document.getElementById('apptNotes').value.trim();
+            const alertBox = document.getElementById('apptValidationAlert');
+            const errorTextSpan = document.getElementById('apptValidationErrorText');
+
+            if (!date || !notes) {
+                errorTextSpan.textContent = "Please ensure all fields are filled.";
+                alertBox.classList.remove('d-none');
+                return;
+            }
+
+            if (!time) {
+                errorTextSpan.textContent = "Please select a time slot for meeting.";
+                alertBox.classList.remove('d-none');
+                return;
+            }
+
+            alertBox.classList.add('d-none');
+
+            const form = document.getElementById('appointmentForm');
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('@Url.Action("BookAppointment", "Doctor")', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server returned status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (appointmentModalInstance) appointmentModalInstance.hide();
+                showToast(data.message, data.success);
+            } catch (err) {
+                console.error(err);
+                if (appointmentModalInstance) appointmentModalInstance.hide();
+                showToast("Failed to book appointment. Please check server logs.", false);
+            }
+        }
+    </script>
+}

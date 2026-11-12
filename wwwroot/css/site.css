@@ -1,0 +1,933 @@
+/* Override Bootstrap's font stack so Inter applies everywhere */
+:root {
+    --bs-font-sans-serif: 'Inter', sans-serif;
+    --bs-body-font-family: 'Inter', sans-serif;
+}
+
+html {
+    font-size: 14px;
+    position: relative;
+    min-height: 100%;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+body, input, button, select, textarea {
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    margin-bottom: 60px;
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+/* ═══════════════════════════════════════════════
+    Shared Component Styles
+═══════════════════════════════════════════════ */
+
+/* Pill tab bar - replaces default Bootstrap nav-tabs wherever a card needs
+   an internal tab switcher (e.g. patient detail Personal/History/Allergies). */
+.pt-tabs {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    padding: 0 1.25rem 1rem;
+}
+
+.pt-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 50rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+    .pt-tab:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+    }
+
+    .pt-tab.active {
+        background: #0f172a;
+        color: #fff;
+        border-color: #0f172a;
+    }
+
+    .pt-tab .badge {
+        font-size: 0.65rem;
+    }
+
+.dashboard-stat-card {
+    transition: transform 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+}
+
+    .dashboard-stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.09);
+    }
+
+/* Horizontal audit-trail stepper - used by LabTech's _HistoryTrail partial
+   (CaptureResult review mode, VerifyResult, VerificationHistory's trail modal).
+   Reads left-to-right as a connected timeline instead of a stacked list. */
+.trail-stepper {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    overflow-x: auto;
+    padding: 0.75rem 0.25rem 0.5rem;
+}
+
+.trail-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 0 0 132px;
+    position: relative;
+    padding: 0 0.5rem;
+}
+
+    .trail-step:not(:first-child)::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: -50%;
+        width: 100%;
+        height: 2px;
+        background: #e2e8f0;
+        z-index: 0;
+    }
+
+.trail-step-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    position: relative;
+    z-index: 1;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 1px #e2e8f0;
+    flex-shrink: 0;
+}
+
+.trail-step-label { font-weight: 700; font-size: 0.78rem; margin-top: 0.6rem; color: #0f172a; }
+.trail-step-time  { font-size: 0.68rem; color: #94a3b8; margin-top: 0.15rem; }
+.trail-step-by    { font-size: 0.68rem; color: #64748b; margin-top: 0.1rem; }
+.trail-step-note {
+    font-size: 0.68rem;
+    color: #64748b;
+    margin-top: 0.4rem;
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: 0;
+    padding: 0.35rem 0.55rem;
+    max-width: 132px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: default;
+}
+.trail-empty { color: #94a3b8; font-size: 0.82rem; padding: 1rem 0; text-align: center; width: 100%; }
+
+/* ═══════════════════════════════════════════════
+    Lab Technician Component Styles
+═══════════════════════════════════════════════ */
+
+/* KPI Cards - feature-card style from Home */
+.kpi-card {
+    background: #fff;
+    border: 1px solid #e1e1e1;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    transition: 0.4s;
+    height: 100%;
+}
+
+    .kpi-card:hover {
+        background: #fff;
+        border-color: #e1e1e1;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.03);
+        cursor: pointer;
+    }
+
+.kpi-icon {
+    width: 48px;
+    height: 48px;
+    background: #fff;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.875rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.06);
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.kpi-blue, .kpi-green, .kpi-amber, .kpi-slate, .kpi-red, .kpi-dark {
+    background: #fff;
+}
+
+.kpi-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #0f172a;
+}
+
+.kpi-label {
+    font-size: 0.7rem;
+    color: #64748b;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 0.2rem;
+}
+
+/* Chart Cards */
+.chart-card {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid #e1e1e1;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.05);
+}
+
+.chart-card-header {
+    padding: 0.8rem 1.125rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #475569;
+    border-bottom: 1px solid #e1e1e1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+}
+
+.chart-card-body {
+    padding: 1rem;
+}
+
+/* Dashboard Sections */
+.dash-section {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid #e1e1e1;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    border-left-width: 1px;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.05);
+}
+
+.accent-blue, .accent-green, .accent-amber, .accent-red, .accent-slate {
+    border-left-color: #e1e1e1;
+}
+
+.dash-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1.125rem;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid #e1e1e1;
+}
+
+    .dash-section-header:hover {
+        background: #f8fafc;
+    }
+
+.dash-section-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dash-section-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.dash-pill {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.12rem 0.5rem;
+    border-radius: 50rem;
+}
+
+.pill-blue, .pill-green, .pill-amber, .pill-red, .pill-slate {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.dash-chevron {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    transition: transform 0.2s;
+}
+
+.section-toggle[aria-expanded="false"] .dash-chevron {
+    transform: rotate(-90deg);
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 1.75rem;
+    color: #94a3b8;
+    font-size: 0.8rem;
+}
+
+    .empty-state i {
+        font-size: 1.4rem;
+        opacity: 0.4;
+    }
+
+/* Card header color variants */
+.ch-blue {
+    background: #eff6ff !important;
+    color: #2563eb !important;
+    border-bottom-color: #dbeafe !important;
+}
+
+.ch-green {
+    background: #ecfdf5 !important;
+    color: #059669 !important;
+    border-bottom-color: #d1fae5 !important;
+}
+
+.ch-amber {
+    background: #fffbeb !important;
+    color: #d97706 !important;
+    border-bottom-color: #fde68a !important;
+}
+
+.ch-slate {
+    background: #f8fafc !important;
+    color: #475569 !important;
+    border-bottom-color: #e2e8f0 !important;
+}
+
+.ch-danger {
+    background: #fef2f2 !important;
+    color: #dc2626 !important;
+    border-bottom-color: #fecaca !important;
+}
+
+/* Info grid (dl layout) */
+.info-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.35rem 1rem;
+    font-size: 0.82rem;
+}
+
+    .info-grid dt {
+        color: #64748b;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .info-grid dd {
+        margin: 0;
+    }
+
+/* Filter bar */
+.filter-bar {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid #e1e1e1;
+    border-radius: 0.75rem;
+    padding: 0.6rem 0.875rem;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.05);
+}
+
+/* Lab Tech table */
+.lt-main .table {
+    font-size: .92rem;
+}
+
+    .lt-main .table thead th {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6c757d;
+    }
+
+/* Overrides for lab tech area */
+.lt-main .btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.82rem;
+    border-radius: 0.5rem;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lt-main .btn-sm {
+    font-size: 0.84rem;
+    border-radius: 0.5rem;
+    min-height: 32px;
+}
+
+.lt-main .form-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #475569;
+    margin-bottom: 0.45rem;
+}
+
+.lt-main .form-control, .lt-main .form-select {
+    font-size: 0.85rem;
+    border-radius: 0.5rem;
+    border: 1px solid #cbd5e1;
+    background-color: #ffffff;
+    padding: 0.55rem 0.85rem;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+}
+
+    .lt-main .form-control:focus, .lt-main .form-select:focus {
+        border-color: #3b82f6;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 4px rgba(59,130,246,0.14);
+    }
+
+.lt-main .card {
+    background: rgba(255,255,255,0.85) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid #e1e1e1 !important;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.05);
+}
+
+.lt-main .card-header {
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.75rem 0.75rem 0 0;
+    background: transparent !important;
+    border-bottom: 1px solid #e1e1e1 !important;
+    color: #0f172a !important;
+    padding: 1rem 1.25rem;
+}
+
+/* ═══════════════════════════════════════════════
+    Admin Component Styles
+═══════════════════════════════════════════════ */
+
+/* Global Overrides for Admin Area */
+.admin-main .table {
+    font-size: 0.92rem;
+}
+
+    .admin-main .table thead th {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6c757d;
+    }
+
+.admin-main .btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.82rem;
+    border-radius: 0.5rem;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-main .btn-sm {
+    font-size: 0.84rem;
+    border-radius: 0.5rem;
+    min-height: 32px;
+}
+
+.admin-main .form-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #475569;
+    margin-bottom: 0.45rem;
+}
+
+.admin-main .form-control, .admin-main .form-select {
+    font-size: 0.85rem;
+    border-radius: 0.5rem;
+    border: 1px solid #cbd5e1;
+    background-color: #ffffff;
+    padding: 0.55rem 0.85rem;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+}
+
+    .admin-main .form-control:focus, .admin-main .form-select:focus {
+        border-color: #3b82f6;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 4px rgba(59,130,246,0.14);
+    }
+
+/* Card components within Admin Main */
+.admin-main .card {
+    background: rgba(255,255,255,0.85) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid #e1e1e1 !important;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.05);
+}
+
+.admin-main .card-header {
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.75rem 0.75rem 0 0;
+    background: transparent !important;
+    border-bottom: 1px solid #e1e1e1 !important;
+    color: #0f172a !important;
+    padding: 1rem 1.25rem;
+}
+
+/* Admin specific accent features */
+.admin-badge-role {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+/* ═══════════════════════════════════════════════
+    Patient Component Styles
+═══════════════════════════════════════════════ */
+
+/* Global Overrides for Patient Area */
+.patient-main .table {
+    font-size: 0.92rem;
+}
+
+    .patient-main .table thead th {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6c757d;
+    }
+
+.patient-main .btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 0.82rem;
+    border-radius: 0.5rem;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.patient-main .btn-sm {
+    font-size: 0.84rem;
+    border-radius: 0.5rem;
+    min-height: 32px;
+}
+
+.patient-main .form-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #475569;
+    margin-bottom: 0.45rem;
+}
+
+.patient-main .form-control, .patient-main .form-select {
+    font-size: 0.85rem;
+    border-radius: 0.5rem;
+    border: 1px solid #cbd5e1;
+    background-color: #ffffff;
+    padding: 0.55rem 0.85rem;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+}
+
+    .patient-main .form-control:focus, .patient-main .form-select:focus {
+        border-color: #3b82f6;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 4px rgba(59,130,246,0.14);
+    }
+
+/* Card components within Patient Main */
+.patient-main .card {
+    background: rgba(255,255,255,0.85) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid #e1e1e1 !important;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.05);
+}
+
+.patient-main .card-header {
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.75rem 0.75rem 0 0;
+    background: transparent !important;
+    border-bottom: 1px solid #e1e1e1 !important;
+    color: #0f172a !important;
+    padding: 1rem 1.25rem;
+}
+
+/* Patient Specific Health metrics & indicators */
+.health-trend-up {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.health-trend-down {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.patient-status-pill {
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 0.15rem 0.6rem;
+    border-radius: 50rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+/* ═══════════════════════════════════════════════
+   Doctor Portal - Badge Styles
+═══════════════════════════════════════════════ */
+
+/*Urgency Badges*/
+.badge.badge-stat {
+    background-color: #fee2e2 !important;
+    color: #991b1b !important;
+    font-weight: 500;
+}
+
+.badge.badge-urgent {
+    background-color: #fff7ed !important;
+    color: #ea580c !important;
+    border: 1px solid #fed7aa;
+}
+
+.badge.badge-routine {
+    background-color: #e2e8f0 !important;
+    color: #334155 !important;
+}
+
+/* Status Workflow Badges */
+.badge.badge-completed {
+    background-color: #d1fae5 !important;
+    color: #065f46 !important;
+    font-weight: 500;
+}
+
+.badge.badge-inprogress {
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+    font-weight: 500;
+}
+
+/* Premium Medical Purple branding for Awaiting Release */
+.badge.badge-awaiting-release {
+    background-color: #f3e8ff !important;
+    color: #6b21a8 !important;
+    font-weight: 500;
+}
+
+/* Professional Soft Slate Design for Submitted status entries */
+.badge.badge-submitted {
+    background-color: #f1f5f9 !important;
+    color: #475569 !important;
+    font-weight: 500;
+}
+
+/* Interactive Dashboard Elevations */
+.dashboard-stat-card {
+    transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    cursor: pointer;
+}
+
+    .dashboard-stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.04);
+    }
+
+
+:root {
+    --hu-navy: #0f172a;
+    --hu-blue: #3b82f6;
+    --hu-red: #dc2626;
+    --hu-amber: #d97706;
+    --hu-green: #059669;
+}
+
+/* ── Overlay ── */
+.hu-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    padding: 1rem;
+}
+
+    .hu-overlay.hu-open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+/* ── Modal Card ── */
+.hu-modal {
+    background: #ffffff;
+    width: 100%;
+    max-width: 420px;
+    border-radius: 0;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+    transform: translateY(10px) scale(0.98);
+    transition: transform 0.15s ease;
+    font-family: 'Inter', sans-serif;
+}
+
+.hu-overlay.hu-open .hu-modal {
+    transform: translateY(0) scale(1);
+}
+
+.hu-modal-body {
+    padding: 1.75rem 1.75rem 1.25rem;
+    text-align: center;
+}
+
+.hu-modal-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.35rem;
+}
+
+    .hu-modal-icon.hu-danger {
+        background: #fee2e2;
+        color: var(--hu-red);
+    }
+
+    .hu-modal-icon.hu-warning {
+        background: #fef3c7;
+        color: var(--hu-amber);
+    }
+
+    .hu-modal-icon.hu-info {
+        background: #dbeafe;
+        color: var(--hu-blue);
+    }
+
+    .hu-modal-icon.hu-success {
+        background: #d1fae5;
+        color: var(--hu-green);
+    }
+
+.hu-modal-title {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: var(--hu-navy);
+    margin-bottom: 0.4rem;
+}
+
+.hu-modal-message {
+    font-size: 0.85rem;
+    color: #475569;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.hu-modal-actions {
+    display: flex;
+    border-top: 1px solid #f1f5f9;
+}
+
+.hu-btn {
+    flex: 1;
+    border: none;
+    background: #ffffff;
+    padding: 0.85rem 1rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    transition: background 0.12s ease;
+    font-family: 'Inter', sans-serif;
+}
+
+    .hu-btn:hover {
+        background: #f8fafc;
+    }
+
+    .hu-btn + .hu-btn {
+        border-left: 1px solid #f1f5f9;
+    }
+
+.hu-btn-primary {
+    color: var(--hu-navy);
+    font-weight: 700;
+}
+
+.hu-btn-danger {
+    color: var(--hu-red);
+    font-weight: 700;
+}
+
+/* ── Toasts ── */
+.hu-toast-stack {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 2100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-width: 340px;
+}
+
+.hu-toast {
+    background: #ffffff;
+    border-left: 3px solid var(--hu-navy);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    color: var(--hu-navy);
+    opacity: 0;
+    transform: translateX(20px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+    .hu-toast.hu-show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .hu-toast.hu-success {
+        border-left-color: var(--hu-green);
+    }
+
+    .hu-toast.hu-error {
+        border-left-color: var(--hu-red);
+    }
+
+    .hu-toast.hu-warning {
+        border-left-color: var(--hu-amber);
+    }
+
+    .hu-toast.hu-info {
+        border-left-color: var(--hu-blue);
+    }
+
+.hu-toast-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+    margin-top: 0.05rem;
+}
+
+.hu-toast.hu-success .hu-toast-icon {
+    color: var(--hu-green);
+}
+
+.hu-toast.hu-error .hu-toast-icon {
+    color: var(--hu-red);
+}
+
+.hu-toast.hu-warning .hu-toast-icon {
+    color: var(--hu-amber);
+}
+
+.hu-toast.hu-info .hu-toast-icon {
+    color: var(--hu-blue);
+}
+
+.hu-toast-msg {
+    flex: 1;
+    line-height: 1.4;
+}
+
+.hu-toast-close {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.9rem;
+    line-height: 1;
+    padding: 0;
+}
+/* ---- Auth pages (login / register / forgot / reset / 2FA): inputs use the same size as the labels,
+        and always fill the width of their column so text never overflows ---- */
+.auth-card .form-control, .auth-card .form-select, .auth-card .input-group-text,
+.auth-card .input-group .btn, .auth-card .btn { font-size: .875em; }
+.auth-card .form-control, .auth-card .form-select { width: 100%; min-width: 0; padding: .55rem .75rem; text-overflow: ellipsis; }
+.auth-card .form-select { padding-right: 2.25rem; }
+/* password box + show/hide eye stay on one line */
+.auth-card .input-group { flex-wrap: nowrap; }
+.auth-card .input-group > .form-control { flex: 1 1 auto; width: 1%; }
+.auth-card .input-group > .btn { flex: 0 0 auto; padding-left: .85rem; padding-right: .85rem; }
+.auth-card .form-control::placeholder { font-size: .875em; }
+.auth-card .form-label { margin-bottom: .3rem; }
+
+/* Doctor portal - extra request statuses */
+.badge.badge-cancelled { background-color: #fee2e2 !important; color: #991b1b !important; font-weight: 500; }
+.badge.badge-samples   { background-color: #dbeafe !important; color: #1e40af !important; font-weight: 500; }
+.badge.badge-released  { background-color: #d1fae5 !important; color: #065f46 !important; font-weight: 500; }
+.abnormal-flag { background: #fff1f2; }
+.style-tiny { font-size: 0.72rem; }

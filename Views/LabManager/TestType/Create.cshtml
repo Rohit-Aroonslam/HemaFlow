@@ -1,0 +1,249 @@
+﻿@model Project.Models.LabManager.TestType
+@{
+    ViewData["Title"] = "Add Test Type";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Add Test Type</h2>
+    <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="card shadow-sm border-0" style="max-width:1100px">
+    <div class="card-body p-4">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+            <!-- Test type details -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Test Name <span class="text-danger">*</span></label>
+                <input asp-for="Name" class="form-control" placeholder="e.g. Full Blood Count" />
+                <span asp-validation-for="Name" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
+                <select asp-for="TestCategoryId" class="form-select">
+                    <option value="">- Select Category -</option>
+                    @foreach (var c in ViewBag.Categories)
+                    {
+                        <option value="@c.Id">@c.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="TestCategoryId" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Sample Type <span class="text-danger">*</span></label>
+                <select asp-for="SampleTypeId" class="form-select">
+                    <option value="">- Select Sample Type -</option>
+                    @foreach (var s in ViewBag.SampleTypes)
+                    {
+                        <option value="@s.Id">@s.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="SampleTypeId" class="text-danger small"></span>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Units <span class="text-danger">*</span></label>
+                    <input asp-for="Units" class="form-control" placeholder="e.g. x10³/µL" />
+                    <span asp-validation-for="Units" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Normal Min <span class="text-danger">*</span></label>
+                    <input asp-for="NormalMin" class="form-control" type="number" step="0.01" />
+                    <span asp-validation-for="NormalMin" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Normal Max <span class="text-danger">*</span></label>
+                    <input asp-for="NormalMax" class="form-control" type="number" step="0.01" />
+                    <span asp-validation-for="NormalMax" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Turnaround Time (minutes) <span class="text-danger">*</span></label>
+                <input asp-for="TurnaroundTime" class="form-control" type="number" min="1" step="1" placeholder="e.g. 60" />
+                <span asp-validation-for="TurnaroundTime" class="text-danger small"></span>
+            </div>
+
+            <!-- Consumables: pick list (left) next to the running selection (right) -->
+            <label class="form-label fw-semibold mb-0">Consumables Used</label>
+            <small class="text-muted d-block mb-2">
+                Tick each consumable this test uses and set how many units one test needs.
+                Your selection appears in the <strong>Selected Consumables</strong> panel.
+            </small>
+
+            <div class="row g-3 mb-4 align-items-start">
+                <div class="col-lg-7">
+                        @if (ViewBag.Consumables != null && ((List<Project.Models.LabManager.Consumable>)ViewBag.Consumables).Any())
+                        {
+                            <div class="card bg-light border-0 p-3">
+                                <input type="text" class="form-control form-control-sm mb-2 consumable-search"
+                                       placeholder="Search consumables..." aria-label="Search consumables">
+
+                                <div class="consumable-list" style="max-height:320px; overflow-y:auto;">
+                                    @foreach (var c in ViewBag.Consumables)
+                                    {
+                                        bool isSelected = ViewBag.SelectedConsumableIds != null &&
+                                                          ((List<int>)ViewBag.SelectedConsumableIds).Contains(c.Id);
+
+                                        int qtyValue = 1;
+                                        if (ViewBag.ConsumableQuantities != null)
+                                        {
+                                            var qtyDict = (Dictionary<int, int>)ViewBag.ConsumableQuantities;
+                                            int consumableId = (int)c.Id;
+                                            if (qtyDict.TryGetValue(consumableId, out int storedQty)) qtyValue = storedQty;
+                                        }
+
+                                        <div class="d-flex align-items-center gap-2 py-1 px-2 consumable-row"
+                                             data-id="@c.Id" data-name="@c.Name.ToLower()" data-label="@c.Name">
+                                            <div class="form-check flex-grow-1 mb-0">
+                                                <input type="checkbox" name="selectedConsumables" value="@c.Id"
+                                                       class="form-check-input consumable-check" id="cons_@c.Id"
+                                                       @(isSelected ? "checked" : "") />
+                                                <label class="form-check-label" for="cons_@c.Id">@c.Name</label>
+                                            </div>
+                                            <input type="number" name="quantities[@c.Id]" value="@qtyValue" min="1" step="1"
+                                                   class="form-control form-control-sm consumable-qty" style="width:80px"
+                                                   disabled="@(isSelected ? null : "disabled")" aria-label="Quantity of @c.Name" />
+                                        </div>
+                                    }
+                                    <p class="text-muted small mb-0 py-2 d-none consumable-nomatch">No consumables match your search.</p>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="card bg-light border-0 p-3">
+                                <p class="text-muted mb-0 small">No consumables available. Add consumables first.</p>
+                            </div>
+                        }
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="card border selected-panel">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-semibold"><i class="bi bi-check2-square me-1"></i>Selected Consumables</h6>
+                            <span class="badge bg-success rounded-pill" id="selectedCount">0</span>
+                        </div>
+                        <div class="card-body pt-2">
+                            <p class="text-muted small mb-0 pt-1" id="selectedEmpty">
+                                No consumables selected yet. Tick them in the list on the left.
+                            </p>
+                            <div class="d-flex justify-content-between text-muted text-uppercase fw-semibold px-1 mb-1 d-none"
+                                 id="selectedHead" style="font-size:.7rem; letter-spacing:.05em;">
+                                <span>Consumable</span><span style="margin-right:3.4rem;">Qty per test</span>
+                            </div>
+                            <ul class="list-group list-group-flush" id="selectedList"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i>Save Test Type</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <style>
+        .consumable-row.picked { background: rgba(25, 135, 84, .09); border-radius: .375rem; }
+        #selectedList { max-height: 300px; overflow-y: auto; }
+    </style>
+    <script>
+        (function () {
+            var rows = Array.prototype.slice.call(document.querySelectorAll('.consumable-row'));
+            var list = document.getElementById('selectedList');
+            var empty = document.getElementById('selectedEmpty');
+            var head = document.getElementById('selectedHead');
+            var count = document.getElementById('selectedCount');
+
+            // Rebuild the "Selected Consumables" panel (alphabetical) from the ticked rows
+            function render() {
+                var picked = rows.filter(function (r) { return r.querySelector('.consumable-check').checked; })
+                                 .sort(function (a, b) { return a.dataset.label.localeCompare(b.dataset.label); });
+
+                list.innerHTML = '';
+                picked.forEach(function (row) {
+                    var chk = row.querySelector('.consumable-check');
+                    var qty = row.querySelector('.consumable-qty');
+
+                    var li = document.createElement('li');
+                    li.className = 'list-group-item d-flex align-items-center gap-2 px-1';
+                    li.dataset.id = row.dataset.id;
+
+                    var name = document.createElement('span');
+                    name.className = 'flex-grow-1 small fw-semibold';
+                    name.textContent = row.dataset.label;
+
+                    // Panel quantity has no name - only the list input is posted; the two stay in sync
+                    var q = document.createElement('input');
+                    q.type = 'number'; q.min = '1'; q.step = '1'; q.value = qty.value;
+                    q.className = 'form-control form-control-sm';
+                    q.style.width = '72px';
+                    q.setAttribute('aria-label', 'Quantity of ' + row.dataset.label);
+                    q.addEventListener('input', function () { qty.value = q.value; });
+
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'btn btn-sm btn-outline-danger';
+                    btn.innerHTML = '<i class="bi bi-x-lg"></i>';
+                    btn.title = 'Remove';
+                    btn.setAttribute('aria-label', 'Remove ' + row.dataset.label);
+                    btn.addEventListener('click', function () {
+                        chk.checked = false;
+                        chk.dispatchEvent(new Event('change'));
+                    });
+
+                    li.appendChild(name); li.appendChild(q); li.appendChild(btn);
+                    list.appendChild(li);
+                });
+
+                count.textContent = picked.length;
+                empty.classList.toggle('d-none', picked.length > 0);
+                head.classList.toggle('d-none', picked.length === 0);
+            }
+
+            rows.forEach(function (row) {
+                var chk = row.querySelector('.consumable-check');
+                var qty = row.querySelector('.consumable-qty');
+
+                function syncRow() {
+                    qty.disabled = !chk.checked;
+                    row.classList.toggle('picked', chk.checked);
+                }
+                chk.addEventListener('change', function () { syncRow(); render(); });
+
+                // Typing a quantity in the list updates the panel without rebuilding it (keeps focus)
+                qty.addEventListener('input', function () {
+                    var p = list.querySelector('li[data-id="' + row.dataset.id + '"] input');
+                    if (p) p.value = qty.value;
+                });
+                syncRow();
+            });
+
+            // Live search filter - the panel always shows every selected item, even hidden ones
+            var search = document.querySelector('.consumable-search');
+            var noMatch = document.querySelector('.consumable-nomatch');
+            if (search) {
+                search.addEventListener('input', function () {
+                    var term = this.value.trim().toLowerCase();
+                    var shown = 0;
+                    rows.forEach(function (row) {
+                        var match = row.dataset.name.indexOf(term) !== -1;
+                        if (match) { row.style.removeProperty('display'); shown++; }
+                        else { row.style.setProperty('display', 'none', 'important'); }
+                    });
+                    if (noMatch) noMatch.classList.toggle('d-none', shown > 0);
+                });
+            }
+
+            render();
+        })();
+    </script>
+}

@@ -1,0 +1,46 @@
+﻿@model IEnumerable<Project.Models.LabManager.Consumable>
+@{
+    ViewData["Title"] = "Archived Consumables";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Archived Consumables</h2>
+    <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i>Back to Consumables</a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th class="ps-4">Name</th>
+                    <th>Supplier</th>
+                    <th>Reorder Level</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr class="table-secondary">
+                            <td class="ps-4"><strong>@item.Name</strong></td>
+                            <td>@item.Supplier?.Name</td>
+                            <td>@item.ReorderLevel</td>
+                            <td class="text-end pe-4">
+                                <a asp-action="Unarchive" asp-route-id="@item.Id" class="btn btn-success btn-sm">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="4" class="text-center text-muted py-4">No archived consumables.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

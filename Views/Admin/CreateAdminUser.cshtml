@@ -1,0 +1,69 @@
+@model Project.Models.CreateAdminUserViewModel
+@{
+    ViewData["Title"] = "Create Admin Account";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container" style="padding-top:8px; padding-bottom:24px;">
+    <div class="row justify-content-center">
+        <div class="col-lg-7 col-xl-6">
+            <div style="border:1px solid #e1e1e1; background:#fff;">
+                <div class="p-4 p-lg-5">
+                    <h5 class="fw-bold mb-1">Create Admin Account</h5>
+                    <p class="text-muted small mb-4">Super Admin only - this creates a new staff Admin login.</p>
+
+                    @if (TempData["Error"] != null)
+                    {
+                        <div data-toast="danger" class="alert alert-danger rounded-0 border-0 border-start border-3 border-danger small mb-3" role="alert">
+                            <i class="bi bi-exclamation-circle me-2"></i>@TempData["Error"]
+                        </div>
+                    }
+
+                    <form asp-controller="Admin" asp-action="CreateAdminUser" method="post">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">First Name</label>
+                                <input asp-for="FirstName" class="form-control" placeholder="Enter first name">
+                                <span asp-validation-for="FirstName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Surname</label>
+                                <input asp-for="Surname" class="form-control" placeholder="Enter surname">
+                                <span asp-validation-for="Surname" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Email Address</label>
+                            <input asp-for="Email" type="email" class="form-control" placeholder="name@hemaflow.co.za">
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Initial Password</label>
+                                <input asp-for="Password" type="password" class="form-control" placeholder="Min. 8 characters">
+                                <span asp-validation-for="Password" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Confirm Password</label>
+                                <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="Re-enter password">
+                                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <p class="text-muted small mb-4">
+                            The new Admin should change this password after their first login
+                            (via Profile &rarr; Change Password).
+                        </p>
+
+                        <button type="submit" class="btn btn-dark w-100 fw-semibold">Create Admin Account</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

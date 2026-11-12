@@ -1,0 +1,111 @@
+@model Project.Models.ActivityLogPageViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "System Activity | Hema Flow";
+    string PageUrl(int p) => Url.Action("ActivityLog", "Admin", new { q = Model.Query, type = Model.Type, role = Model.Role, from = Model.From, to = Model.To, page = p })!;
+}
+
+<div class="row align-items-center mb-4 g-3">
+    <div class="col-md-8">
+        <h4 class="fw-700 mb-1" style="color: #0f172a;">System Activity</h4>
+        <p class="text-muted small mb-0">Everything staff and admins have done in the system. Times are shown in South African time (UTC+2).</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <span class="text-muted small">@Model.TotalCount entr@(Model.TotalCount == 1 ? "y" : "ies")</span>
+    </div>
+</div>
+
+<form method="get" asp-controller="Admin" asp-action="ActivityLog" class="card p-3 mb-4">
+    <div class="row g-2 align-items-end">
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Search</label>
+            <input type="text" name="q" data-live-search value="@Model.Query" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small" placeholder="Action, detail or person...">
+        </div>
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Type</label>
+            <select name="type" data-live-search class="form-select bg-light border-0 rounded-0 shadow-none py-2 small">
+                <option value="">All types</option>
+                @foreach (var t in new[] { "info", "success", "warning", "danger" })
+                {
+                    <option value="@t" selected="@(Model.Type == t)">@(char.ToUpper(t[0]) + t.Substring(1))</option>
+                }
+            </select>
+        </div>
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Role</label>
+            <select name="role" data-live-search class="form-select bg-light border-0 rounded-0 shadow-none py-2 small">
+                <option value="">All roles</option>
+                @foreach (var r in Model.Roles)
+                {
+                    <option value="@r" selected="@(Model.Role == r)">@r</option>
+                }
+            </select>
+        </div>
+        <div class="col-lg-2 col-md-3 col-6">
+            <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">From</label>
+            <input type="date" max="@Project.Services.SastTime.ToSast(DateTime.UtcNow).ToString("yyyy-MM-dd")" name="from" data-live-search value="@Model.From" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small">
+        </div>
+        <div class="col-lg-2 col-md-3 col-6">
+            <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">To</label>
+            <input type="date" max="@Project.Services.SastTime.ToSast(DateTime.UtcNow).ToString("yyyy-MM-dd")" name="to" data-live-search value="@Model.To" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small">
+        </div>
+        <div class="col-lg-1 col-12 d-flex gap-1">
+            <noscript><button type="submit" class="btn btn-dark w-100"><i class="bi bi-funnel"></i></button></noscript>
+        </div>
+    </div>
+    @if (!string.IsNullOrEmpty(Model.Query) || !string.IsNullOrEmpty(Model.Type) || !string.IsNullOrEmpty(Model.Role) || !string.IsNullOrEmpty(Model.From) || !string.IsNullOrEmpty(Model.To))
+    {
+        <div class="mt-2"><a asp-controller="Admin" asp-action="ActivityLog" class="small text-muted text-decoration-none"><i class="bi bi-x-circle me-1"></i>Clear filters</a></div>
+    }
+</form>
+
+<div class="card mb-3">
+    <div class="p-0">
+        @if (!Model.Entries.Any())
+        {
+            <div class="p-4 text-muted small">No activity matches those filters.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size:0.82rem;">
+                    <thead>
+                        <tr class="bg-light text-muted text-uppercase fw-600" style="font-size:0.68rem; border-bottom:1px solid #e2e8f0;">
+                            <th class="ps-3 py-2" style="white-space:nowrap;">Date &amp; time</th>
+                            <th class="py-2">Action</th>
+                            <th class="py-2">Detail</th>
+                            <th class="py-2">By</th>
+                            <th class="py-2">Role</th>
+                            <th class="pe-3 py-2">Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var e in Model.Entries)
+                        {
+                            var color = e.LogType switch { "success" => "success", "warning" => "warning", "danger" => "danger", _ => "primary" };
+                            <tr style="border-bottom:1px solid #f1f5f9;">
+                                <td class="ps-3 text-muted x-small" style="white-space:nowrap;">@e.Timestamp.ToString("d MMM yyyy") &bull; @e.Timestamp.ToString("HH:mm:ss")</td>
+                                <td class="fw-600 text-dark">@e.Action</td>
+                                <td class="text-muted small">@e.Detail</td>
+                                <td class="text-muted x-small">@e.Actor</td>
+                                <td class="text-muted x-small">@e.Role</td>
+                                <td class="pe-3"><span class="patient-status-pill text-@color border-@color bg-white" style="font-size:0.65rem;">@e.LogType</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <nav class="d-flex justify-content-between align-items-center">
+        <span class="text-muted small">Page @Model.Page of @Model.TotalPages</span>
+        <div class="d-flex gap-2">
+            @if (Model.Page > 1) { <a class="btn btn-outline-secondary btn-sm" href="@PageUrl(Model.Page - 1)"><i class="bi bi-chevron-left"></i> Newer</a> }
+            @if (Model.Page < Model.TotalPages) { <a class="btn btn-outline-secondary btn-sm" href="@PageUrl(Model.Page + 1)">Older <i class="bi bi-chevron-right"></i></a> }
+        </div>
+    </nav>
+}

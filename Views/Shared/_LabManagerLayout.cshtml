@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Lab Manager | HemaFlow</title>
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico" />
+
+    <link rel="stylesheet" href="~/lib/inter/inter.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <style>
+        :root {
+            --hema-navy: #0f172a;
+            --hema-blue: #3b82f6;
+            --lt-w: 18vw;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            color: #0f172a;
+            overflow-x: hidden;
+        }
+
+        /* ── SIDEBAR ─────────────────────────────────── */
+        .lt-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: var(--lt-w);
+            height: 100vh;
+            background: var(--hema-navy);
+            display: flex;
+            flex-direction: column;
+            z-index: 200;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+
+        .lt-brand {
+            font-size: 1.35rem;
+            color: #fff;
+            font-weight: 700;
+            padding: 1.4rem 1.25rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            flex-shrink: 0;
+        }
+
+        .lt-brand-sub {
+            font-size: 0.62rem;
+            font-weight: 500;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+            display: block;
+            margin-top: 0.2rem;
+        }
+
+        .lt-nav {
+            padding: 0.75rem 0;
+            flex: 1;
+        }
+
+        .lt-nav-section {
+            font-size: 0.58rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.22);
+            padding: 0.9rem 1.25rem 0.3rem;
+        }
+
+        .lt-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 0.55rem 1.25rem;
+            color: rgba(255,255,255,0.6);
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+            transition: all 0.15s ease-in-out;
+        }
+
+            .lt-nav-link:hover {
+                color: #fff;
+                background: rgba(255,255,255,0.05);
+            }
+
+            .lt-nav-link.active {
+                color: #fff;
+                background: rgba(59,130,246,0.14);
+                border-left-color: var(--hema-blue);
+            }
+
+            .lt-nav-link i {
+                font-size: 0.95rem;
+                width: 1rem;
+                text-align: center;
+                flex-shrink: 0;
+            }
+
+            .lt-nav-link.logout-link {
+                color: rgba(255,100,100,0.7);
+            }
+
+                .lt-nav-link.logout-link:hover {
+                    color: #ff6464;
+                    background: rgba(255,100,100,0.06);
+                }
+
+        .lt-sidebar-footer {
+            padding: 0.9rem 1.25rem;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            font-size: 0.72rem;
+            color: rgba(255,255,255,0.35);
+            flex-shrink: 0;
+        }
+
+            .lt-sidebar-footer strong {
+                color: rgba(255,255,255,0.7);
+                display: block;
+                font-size: 0.78rem;
+                margin-bottom: 0.1rem;
+            }
+
+        .lt-main {
+            margin-left: var(--lt-w);
+            min-height: 100vh;
+            padding: 1.75rem 2rem 3rem;
+        }
+
+        /* ── TOAST NOTIFICATIONS ─────────────────────── */
+        #hema-toast-container {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            pointer-events: none;
+        }
+
+        .hema-toast {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.13), 0 1.5px 6px rgba(0,0,0,0.07);
+            padding: 1rem 1.1rem 1rem 0;
+            min-width: 300px;
+            max-width: 400px;
+            pointer-events: all;
+            border-left: 5px solid #22c55e;
+            animation: toastSlideIn 0.3s cubic-bezier(.4,0,.2,1) forwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .hema-toast.toast-error {
+                border-left-color: #ef4444;
+            }
+
+            .hema-toast.toast-warning {
+                border-left-color: #f59e0b;
+            }
+
+            .hema-toast.toast-info {
+                border-left-color: #3b82f6;
+            }
+
+        .hema-toast-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.2rem;
+            height: 2.2rem;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-left: 0.9rem;
+            font-size: 1rem;
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .hema-toast.toast-error .hema-toast-icon {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .hema-toast.toast-warning .hema-toast-icon {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .hema-toast.toast-info .hema-toast-icon {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .hema-toast-body {
+            flex: 1;
+            padding-top: 0.1rem;
+        }
+
+        .hema-toast-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #16a34a;
+            margin-bottom: 0.15rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .hema-toast.toast-error .hema-toast-title {
+            color: #dc2626;
+        }
+
+        .hema-toast.toast-warning .hema-toast-title {
+            color: #d97706;
+        }
+
+        .hema-toast.toast-info .hema-toast-title {
+            color: #2563eb;
+        }
+
+        .hema-toast-message {
+            font-size: 0.85rem;
+            color: #374151;
+            line-height: 1.4;
+        }
+
+        .hema-toast-close {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 0.1rem 0.3rem;
+            font-size: 1rem;
+            line-height: 1;
+            align-self: flex-start;
+            margin-top: -0.1rem;
+        }
+
+            .hema-toast-close:hover {
+                color: #374151;
+            }
+
+        .hema-toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: #22c55e;
+            border-radius: 0 0 0 10px;
+            animation: toastProgress 4s linear forwards;
+        }
+
+        .hema-toast.toast-error .hema-toast-progress {
+            background: #ef4444;
+        }
+
+        .hema-toast.toast-warning .hema-toast-progress {
+            background: #f59e0b;
+        }
+
+        .hema-toast.toast-info .hema-toast-progress {
+            background: #3b82f6;
+        }
+
+        @@keyframes toastSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(60px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @@keyframes toastSlideOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+                max-height: 200px;
+            }
+
+            to {
+                opacity: 0;
+                transform: translateX(60px);
+                max-height: 0;
+            }
+        }
+
+        @@keyframes toastProgress {
+            from {
+                width: 100%;
+            }
+
+            to {
+                width: 0%;
+            }
+        }
+
+        /* ── CONFIRM MODAL ────────────────────────────── */
+        .hema-confirm-modal .modal-content {
+            border: none;
+            border-radius: 14px;
+            box-shadow: 0 20px 60px rgba(15,23,42,0.25);
+            overflow: hidden;
+        }
+
+        .hema-confirm-modal .modal-header {
+            padding: 1.5rem 1.5rem 0;
+        }
+
+        .hema-confirm-modal .modal-body {
+            padding: 0.5rem 1.5rem 1.25rem;
+        }
+
+        .hema-confirm-modal .modal-footer {
+            padding: 0 1.5rem 1.5rem;
+        }
+
+        .hema-confirm-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.75rem;
+            height: 2.75rem;
+            border-radius: 50%;
+            background: #fef3c7;
+            color: #d97706;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .hema-confirm-modal.hema-confirm-danger .hema-confirm-icon {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        #hemaConfirmTitle {
+            font-size: 1.05rem;
+            color: var(--hema-navy);
+        }
+
+        #hemaConfirmMessage {
+            font-size: 0.9rem;
+        }
+
+        .hema-confirm-modal .modal-footer .btn {
+            font-weight: 500;
+            border-radius: 7px;
+        }
+    
+        /* ── Same look as Admin: square corners, compact sidebar, flat confirm popup ── */
+        .card, .dash-section, .chart-card, .glass-card, .btn, .badge, .rounded-pill,
+        .modal-content, .form-control, .form-select, .alert { border-radius: 0 !important; }
+        .lt-nav-link.logout-link { color: rgba(255,100,100,0.85) !important; }
+        .lt-nav-link.logout-link:hover { color: #ff6464 !important; background: rgba(255,100,100,0.08) !important; }
+        .lt-brand { padding: 0.8rem 1.1rem 0.6rem !important; font-size: 1.2rem !important; }
+        .lt-nav { padding: 0.15rem 0 !important; min-height: 0; overflow-y: auto; flex: 1; }
+        .lt-nav-section { padding: 0.5rem 1.1rem 0.12rem !important; }
+        .lt-nav-link { padding: 0.34rem 1.1rem !important; font-size: 0.8rem !important; }
+        .lt-logout { flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.06); }
+        .lt-sidebar-footer { padding: 0.55rem 1.1rem !important; }
+        .hema-confirm-modal .modal-content { border: 1px solid #e1e1e1 !important; border-top: 4px solid #e0a800 !important; box-shadow: 0 12px 40px rgba(0,0,0,.25) !important; text-align: center; }
+        .hema-confirm-modal .modal-header { justify-content: center; }
+        .hema-confirm-modal .btn-close { display: none; }
+        .hema-confirm-modal .modal-footer { justify-content: center; }
+        .hema-confirm-icon { border-radius: 0 !important; background: transparent !important; font-size: 2rem !important; width: auto !important; height: auto !important; }
+        .hema-toast { border-radius: 6px; }
+</style>
+    <script src="~/js/hemaui.js" asp-append-version="true"></script>
+</head>
+
+<body>
+    @{
+        var _ctrl = ViewContext.RouteData.Values["controller"]?.ToString();
+    }
+
+    <!-- Toast container - reads TempData written by controllers -->
+    <div id="hema-toast-container"></div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div data-toast="success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div data-toast="danger">@TempData["ErrorMessage"]</div>
+    }
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div data-toast="warning">@TempData["WarningMessage"]</div>
+    }
+    @if (TempData["InfoMessage"] != null)
+    {
+        <div data-toast="info">@TempData["InfoMessage"]</div>
+    }
+    @* Set by AccountController.AccessDenied (wrong-role page) - shown here so it is not left over for the login page *@
+    @if (TempData["Error"] != null)
+    {
+        <div data-toast="danger">@TempData["Error"]</div>
+    }
+
+    <!-- ── SIDEBAR ──────────────────────────────────── -->
+    <aside class="lt-sidebar" aria-label="Lab Manager Navigation">
+
+        <div class="lt-brand">
+            HemaFlow
+            <span class="lt-brand-sub">Lab Manager</span>
+        </div>
+
+        <nav class="lt-nav">
+
+            <div class="lt-nav-section">Overview</div>
+
+            <a asp-controller="Dashboard" asp-action="Index"
+               class="lt-nav-link @(_ctrl == "Dashboard" ? "active" : "")">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+
+            <div class="lt-nav-section">Tests</div>
+
+            <a asp-controller="TestCategory" asp-action="Index"
+               class="lt-nav-link @(_ctrl == "TestCategory" ? "active" : "")">
+                <i class="bi bi-tags"></i> Test Categories
+            </a>
+
+            <a asp-controller="TestType" asp-action="Index"
+               class="lt-nav-link @(_ctrl == "TestType" ? "active" : "")">
+                <i class="bi bi-clipboard2-pulse"></i> Test Types
+            </a>
+
+            <a asp-controller="SampleType" asp-action="Index"
+               class="lt-nav-link @(_ctrl == "SampleType" ? "active" : "")">
+                <i class="bi bi-droplet"></i> Sample Types
+            </a>
+
+            <div class="lt-nav-section">Inventory</div>
+
+            <a asp-controller="Consumable" asp-action="Index"
+               class="lt-nav-link @(_ctrl == "Consumable" ? "active" : "")">
+                <i class="bi bi-box-seam"></i> Consumables
+            </a>
+
+            <a asp-controller="Supplier" asp-action="Index"
+               class="lt-nav-link @(_ctrl == "Supplier" ? "active" : "")">
+                <i class="bi bi-truck"></i> Suppliers
+            </a>
+
+            <a asp-controller="Order" asp-action="Index"
+               class="lt-nav-link @(_ctrl == "Order" ? "active" : "")">
+                <i class="bi bi-cart3"></i> Orders
+            </a>
+
+            <div class="lt-nav-section">Personnel</div>
+
+            <!-- ✔ Fixed: was "Doctor" - controller is LMDoctorController -->
+            <a asp-controller="LMDoctor" asp-action="Index"
+               class="lt-nav-link @(_ctrl == "LMDoctor" ? "active" : "")">
+                <i class="bi bi-person-badge"></i> Doctors
+            </a>
+
+            <a asp-controller="Technician" asp-action="Index"
+               class="lt-nav-link @(_ctrl == "Technician" ? "active" : "")">
+                <i class="bi bi-person-gear"></i> Technicians
+            </a>
+
+            <div class="lt-nav-section">Reports &amp; Logs</div>
+
+            <a asp-controller="Report" asp-action="Index"
+               class="lt-nav-link @(_ctrl == "Report" ? "active" : "")">
+                <i class="bi bi-file-earmark-bar-graph"></i> Reports
+            </a>
+
+            <!-- ✔ Added - was missing from sidebar -->
+            <a asp-controller="ActivityLog" asp-action="Index"
+               class="lt-nav-link @(_ctrl == "ActivityLog" ? "active" : "")">
+                <i class="bi bi-clock-history"></i> Activity Log
+            </a>
+
+            <div class="lt-nav-section">Account</div>
+
+            <!-- ✔ Added - was missing from sidebar -->
+            <a asp-controller="Profile" asp-action="Index"
+               class="lt-nav-link @(_ctrl == "Profile" ? "active" : "")">
+                <i class="bi bi-person-circle"></i> My Profile
+            </a>
+
+        </nav>
+        <div class="lt-logout">
+            <a asp-controller="Account" asp-action="Logout" class="lt-nav-link logout-link"
+               data-confirm-link=""
+               data-confirm="You'll need to sign in again to access the lab manager portal."
+               data-confirm-title="Log out?"
+               data-confirm-text="Logout">
+                <i class="bi bi-box-arrow-left"></i> Log out
+            </a>
+        </div>
+
+
+        <div class="lt-sidebar-footer">
+            <!-- ✅ Logged-in Lab Manager's name (ClaimTypes.Name set at login) -->
+            <strong>@(User.Identity?.IsAuthenticated == true ? User.Identity.Name : "Lab Manager")</strong>
+            Laboratory Manager
+        </div>
+
+    </aside>
+
+    <!-- ── STYLED CONFIRM MODAL - replaces window.confirm() everywhere in Lab Manager ── -->
+    <div class="modal fade hema-confirm-modal" id="hemaConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <div class="hema-confirm-icon">
+                        <i class="bi bi-exclamation-triangle-fill" id="hemaConfirmIcon"></i>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h5 id="hemaConfirmTitle" class="mb-2 fw-bold">Please Confirm</h5>
+                    <p id="hemaConfirmMessage" class="text-muted mb-0"></p>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger btn-sm" id="hemaConfirmBtn">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="lt-main">
+        @RenderBody()
+    </main>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/password-eye.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <!-- ── TOAST JAVASCRIPT ──────────────────────────── -->
+    <script>
+        (function () {
+            const container = document.getElementById('hema-toast-container');
+
+            const configs = {
+                success: { icon: 'bi-check-circle-fill', title: 'Success',  cls: '' },
+                error:   { icon: 'bi-x-circle-fill',     title: 'Error',    cls: 'toast-error' },
+                warning: { icon: 'bi-exclamation-triangle-fill', title: 'Warning', cls: 'toast-warning' },
+                info:    { icon: 'bi-info-circle-fill',   title: 'Info',     cls: 'toast-info' }
+            };
+
+            function showToast(type, message) {
+                const cfg = configs[type];
+                const toast = document.createElement('div');
+                toast.className = `hema-toast ${cfg.cls}`;
+                toast.innerHTML = `
+                    <div class="hema-toast-icon"><i class="bi ${cfg.icon}"></i></div>
+                    <div class="hema-toast-body">
+                        <div class="hema-toast-title">${cfg.title}</div>
+                        <div class="hema-toast-message">${message}</div>
+                    </div>
+                    <button class="hema-toast-close" onclick="dismissToast(this.parentElement)">
+                        <i class="bi bi-x"></i>
+                    </button>
+                    <div class="hema-toast-progress"></div>
+                `;
+                container.appendChild(toast);
+                setTimeout(() => dismissToast(toast), 4000);
+            }
+
+            window.dismissToast = function (toast) {
+                if (!toast || !toast.parentElement) return;
+                toast.style.animation = 'toastSlideOut 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            };
+
+            // Fire any toasts Razor injected into the page
+            ['success', 'error', 'warning', 'info'].forEach(type => {
+                const el = document.getElementById(`__toast_${type}`);
+                if (el) showToast(type, el.dataset.msg);
+            });
+        })();
+    </script>
+
+    <!-- ── STYLED CONFIRM MODAL JAVASCRIPT ─────────────── -->
+    <!-- Replaces window.confirm() calls across Lab Manager views.
+         Usage: onclick="return hemaConfirm(this, 'Archive Reagent A?')"
+         Optional 3rd arg: { title, confirmText, variant: 'danger'|'warning' } -->
+    <script>
+        function hemaConfirm(trigger, message, opts) {
+            opts = opts || {};
+
+            const modalEl    = document.getElementById('hemaConfirmModal');
+            const titleEl    = document.getElementById('hemaConfirmTitle');
+            const messageEl  = document.getElementById('hemaConfirmMessage');
+            const iconEl     = document.getElementById('hemaConfirmIcon');
+            const confirmBtn = document.getElementById('hemaConfirmBtn');
+
+            const variant = opts.variant || 'danger';
+
+            titleEl.textContent   = opts.title || 'Please Confirm';
+            messageEl.textContent = message;
+            confirmBtn.textContent = opts.confirmText || 'Confirm';
+
+            modalEl.classList.toggle('hema-confirm-danger', variant === 'danger');
+            iconEl.className = variant === 'danger'
+                ? 'bi bi-exclamation-triangle-fill'
+                : 'bi bi-question-circle-fill';
+            confirmBtn.className = 'btn btn-sm ' + (variant === 'danger' ? 'btn-danger' : 'btn-warning');
+
+            const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+            // Swap the click handler each time so we always act on the current trigger
+            const onConfirm = function () {
+                confirmBtn.removeEventListener('click', onConfirm);
+                bsModal.hide();
+                if (trigger.tagName === 'A') {
+                    window.location.href = trigger.href;
+                } else {
+                    const form = trigger.closest('form');
+                    if (form) form.requestSubmit();
+                }
+            };
+            confirmBtn.addEventListener('click', onConfirm);
+
+            bsModal.show();
+            return false; // always block the native action; onConfirm drives it instead
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,82 @@
+﻿@model IEnumerable<Project.Models.LabManager.Order>
+@{
+    ViewData["Title"] = "Orders";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Orders</h2>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Create Order</a>
+</div>
+
+@if (ViewBag.LowStockCount > 0)
+{
+    <div class="alert alert-warning d-flex align-items-center mb-3">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div>
+            <strong>@ViewBag.LowStockCount</strong> consumable(s) are at or near reorder level.
+            <a asp-controller="Consumable" asp-action="Index" class="alert-link ms-1">View Consumables →</a>
+        </div>
+    </div>
+}
+
+<!-- Filter + Search -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+        <form method="get" class="d-flex gap-2">
+            <input type="text" name="search" data-live-search value="@ViewBag.Search"
+                   class="form-control" placeholder="Search order number…" style="width:220px" />
+            <input type="hidden" name="statusFilter" value="@ViewBag.CurrentFilter" />
+            <noscript><button class="btn btn-dark">Search</button></noscript>
+        </form>
+        <div class="ms-auto d-flex gap-2 flex-wrap">
+            @foreach (var f in new[] { "All", "Ordered", "Partial", "Complete", "Cancelled" })
+            {
+                string cls = f == "All" ? "secondary" :
+                f == "Ordered" ? "info" :
+                f == "Partial" ? "warning" :
+                f == "Complete" ? "success" : "danger";
+                <a asp-action="Index" asp-route-statusFilter="@f" asp-route-search="@ViewBag.Search"
+                   class="btn btn-outline-@cls @(ViewBag.CurrentFilter == f ? "active" : "")">@f</a>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th class="ps-4">Order Number</th>
+                    <th>Supplier</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var o in Model)
+                {
+                    string badge = o.Status == "Complete" ? "success" :
+                    o.Status == "Partial" ? "warning" :
+                    o.Status == "Cancelled" ? "danger" : "info";
+                    <tr>
+                        <td class="ps-4"><strong>@o.OrderNumber</strong></td>
+                        <td>@o.Supplier?.Name</td>
+                        <td>@o.OrderDate.ToString("yyyy-MM-dd")</td>
+                        <td><span class="badge bg-@badge">@o.Status</span></td>
+                        <td class="text-end pe-4">
+                            <a asp-action="Details" asp-route-id="@o.Id" class="btn btn-primary btn-sm">
+                                <i class="bi bi-eye me-1"></i>View Details
+                            </a>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="5" class="text-center text-muted py-4">No orders found.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

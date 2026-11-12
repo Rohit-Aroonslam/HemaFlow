@@ -1,0 +1,91 @@
+@model Project.Models.RequestResultsViewModel
+@{
+    Layout = "_PatientLayout";
+    ViewData["Title"] = "Request Results | Hema Flow";
+}
+
+<div class="row align-items-center mb-4 g-3">
+    <div class="col-md-8">
+        <a asp-controller="Patient" asp-action="MyResults" class="text-muted small text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Back to My Results</a>
+        <h4 class="fw-700 mb-1 mt-2" style="color: #0f172a;">@Model.Request.TestName</h4>
+        <p class="text-muted small mb-0">Request #REQ-@Model.Request.RequestId &bull; @Model.Request.RequestDate.ToString("d MMMM yyyy") &bull; @Model.Results.Count test@(Model.Results.Count == 1 ? "" : "s") (@Model.AbnormalCount abnormal, @(Model.Results.Count - Model.AbnormalCount) normal)</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a asp-controller="Patient" asp-action="DownloadResult" asp-route-id="@Model.Request.RequestId" class="btn btn-dark">
+            <i class="bi bi-file-earmark-pdf me-2"></i>Download full report (PDF)
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-4">
+        <div class="card p-3 mb-0">
+            <small class="text-uppercase text-muted fw-600 d-block mb-1" style="font-size:0.65rem;">Tests in this request</small>
+            <span class="fs-4 fw-700 text-dark">@Model.Results.Count</span>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card p-3 mb-0">
+            <small class="text-uppercase text-muted fw-600 d-block mb-1" style="font-size:0.65rem;">Within normal range</small>
+            <span class="fs-4 fw-700 text-success">@(Model.Results.Count - Model.AbnormalCount)</span>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card p-3 mb-0">
+            <small class="text-uppercase text-muted fw-600 d-block mb-1" style="font-size:0.65rem;">Abnormal</small>
+            <span class="fs-4 fw-700 @(Model.AbnormalCount > 0 ? "text-danger" : "text-dark")">@Model.AbnormalCount</span>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-0">
+    <div class="card-header"><i class="bi bi-clipboard2-pulse text-primary me-2"></i>Test results</div>
+    <div class="p-0">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0" style="font-size:0.82rem;">
+                <thead>
+                    <tr class="bg-light text-muted text-uppercase fw-600" style="font-size:0.68rem; border-bottom:1px solid #e2e8f0;">
+                        <th class="ps-3 py-2">Test</th>
+                        <th class="py-2">Result</th>
+                        <th class="py-2">Normal range</th>
+                        <th class="py-2">Status</th>
+                        <th class="text-end pe-3 py-2"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Results)
+                    {
+                        <tr class="@(r.IsAbnormal ? "table-danger bg-opacity-10" : "")" style="border-bottom:1px solid #f1f5f9;">
+                            <td class="ps-3 py-3">
+                                <div class="fw-600 text-dark">@r.TestName</div>
+                                <div class="text-muted x-small">@r.Category</div>
+                                @if (!string.IsNullOrWhiteSpace(r.Notes))
+                                {
+                                    <div class="text-muted x-small fst-italic mt-1"><i class="bi bi-person-badge me-1"></i>@r.Notes</div>
+                                }
+                            </td>
+                            <td class="fw-600 @(r.IsAbnormal ? "text-danger" : "text-dark")">@r.ResultValue @r.Unit</td>
+                            <td class="text-muted">@r.RangeDisplay</td>
+                            <td>
+                                @if (r.IsAbnormal)
+                                {
+                                    <span class="badge bg-danger text-white px-2" style="font-size:0.65rem;"><i class="bi bi-exclamation-triangle me-1"></i>Abnormal</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success text-white px-2" style="font-size:0.65rem;"><i class="bi bi-check-circle me-1"></i>Normal</span>
+                                }
+                            </td>
+                            <td class="text-end pe-3 text-nowrap">
+                                <a asp-controller="Patient" asp-action="DownloadResult" asp-route-id="@Model.Request.RequestId" asp-route-test="@r.TestName"
+                                   class="btn btn-outline-secondary py-1 px-2" style="font-size:0.72rem !important;" title="Download just this test">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

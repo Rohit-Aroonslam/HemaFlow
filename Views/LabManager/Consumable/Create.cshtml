@@ -1,0 +1,46 @@
+﻿@model Project.Models.LabManager.Consumable
+@{
+    ViewData["Title"] = "Add Consumable";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Add Consumable</h2>
+    <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="card shadow-sm border-0" style="max-width:520px">
+    <div class="card-body p-4">
+        <form asp-action="Create" method="post">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
+                <input asp-for="Name" class="form-control" placeholder="e.g. EDTA Tube" />
+                <span asp-validation-for="Name" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Supplier <span class="text-danger">*</span></label>
+                <select asp-for="SupplierId" class="form-select">
+                    <option value="">- Select Supplier -</option>
+                    @foreach (var s in ViewBag.Suppliers)
+                    {
+                        <option value="@s.Id">@s.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="SupplierId" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Quantity On Hand <span class="text-danger">*</span></label>
+                <input asp-for="QuantityOnHand" class="form-control" type="number" min="0" />
+                <span asp-validation-for="QuantityOnHand" class="text-danger small"></span>
+            </div>
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Reorder Level <span class="text-danger">*</span></label>
+                <input asp-for="ReorderLevel" class="form-control" type="number" min="0" />
+                <span asp-validation-for="ReorderLevel" class="text-danger small"></span>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i>Save Consumable</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

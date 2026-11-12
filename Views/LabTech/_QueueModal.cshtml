@@ -1,0 +1,96 @@
+@model LabTechQueueModal
+@*
+    Full list behind a dashboard stat card / bento card, with the dashboard
+    filters inside. Row action depends on where the test is in its workflow.
+*@
+@{
+    var l = Model.List;
+    string UrgClass(string u) => u == "STAT" ? "badge-stat" : u == "Urgent" ? "badge-urgent" : "badge-routine";
+    string StockCls(string s) => s == "OutOfStock" ? "bg-danger-subtle text-danger" : s == "LowStock" ? "bg-warning-subtle text-warning" : "bg-success-subtle text-success";
+    string StockLabel(string s) => s == "OutOfStock" ? "Out of Stock" : s == "LowStock" ? "Low Stock" : "In Stock";
+    var filterData = new ViewDataDictionary(ViewData) { ["Categories"] = Model.Categories, ["Open"] = "modal-" + l.Key };
+    bool showStock = l.Items.Any(i => i.Status == "Available");
+}
+
+<div class="modal fade" id="modal-@l.Key" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content hf-modal">
+            <div class="modal-header border-bottom" style="padding:1.5rem 1.75rem;">
+                <div>
+                    <h6 class="modal-title fw-bold mb-1"><i class="bi @l.Icon me-2"></i>@l.Title <span class="text-muted fw-normal">(@l.Items.Count)</span></h6>
+                    <p class="text-muted small mb-0">@l.Subtitle</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="px-3 py-3 border-bottom">
+                    <partial name="_QueueFilters" model="Model.Filter" view-data="filterData" />
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead><tr class="text-muted small">
+                            <th class="ps-3">REQUEST</th><th>TEST</th><th>STATUS</th>
+                            <th class="text-end pe-3">ACTION</th>
+                        </tr></thead>
+                        <tbody>
+                            @if (!l.Items.Any())
+                            {
+                                <tr><td colspan="4" class="text-center text-muted py-4">@(Model.Filter.Any ? "No tests match the current filters." : l.Empty)</td></tr>
+                            }
+                            @foreach (var item in l.Items)
+                            {
+                                var cs = Model.StockStatus.GetValueOrDefault(item.TestTypeId, "OK");
+                                <tr>
+                                    <td class="ps-3">
+                                        <div class="fw-bold">@item.RequestNumber</div>
+                                        <div class="text-muted" style="font-size:0.72rem;">@item.SampleTypeName</div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <span class="fw-medium small">@item.TestTypeName</span>
+                                            <span class="badge @UrgClass(item.Urgency) rounded-pill px-2" style="font-size:0.64rem;">@item.Urgency</span>
+                                        </div>
+                                        <div class="text-muted" style="font-size:0.72rem;">@item.CategoryName</div>
+                                    </td>
+                                    <td class="small">
+                                        <div>@item.StatusLabel</div>
+                                        <div class="@(item.IsOverdue ? "text-danger fw-semibold" : item.IsNearingTat ? "text-warning fw-semibold" : "text-muted")" style="font-size:0.72rem;">@item.DueText</div>
+                                        @if (showStock && item.Status == "Available")
+                                        {
+                                            <span class="badge @StockCls(cs) rounded-pill px-2 mt-1" style="font-size:0.64rem;">@StockLabel(cs)</span>
+                                        }
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        @switch (item.Status)
+                                        {
+                                            case "Available":
+                                                <a asp-controller="LabTech" asp-action="SelectTest" asp-fragment="test-@item.Id" class="btn btn-dark btn-sm rounded-pill px-3">
+                                                    <i class="bi bi-play-fill me-1"></i>Review &amp; Select
+                                                </a>
+                                                break;
+                                            case "Active":
+                                                <a asp-controller="LabTech" asp-action="CaptureResult" asp-route-id="@item.Id" class="btn btn-dark btn-sm rounded-pill px-3">Capture Result</a>
+                                                break;
+                                            case "Verify":
+                                                if (Model.VerifiableIds.Contains(item.Id))
+                                                {
+                                                    <a asp-controller="LabTech" asp-action="VerifyResult" asp-route-id="@item.Id" class="btn btn-outline-dark btn-sm rounded-pill px-3">Verify</a>
+                                                }
+                                                break;
+                                            case "Review":
+                                                <a asp-controller="LabTech" asp-action="CaptureResult" asp-route-id="@item.Id" class="btn btn-dark btn-sm rounded-pill px-3"><i class="bi bi-pencil me-1"></i>Review</a>
+                                                break;
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-top" style="padding:1rem 1.75rem;">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

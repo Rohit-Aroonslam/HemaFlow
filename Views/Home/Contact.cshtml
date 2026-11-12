@@ -1,0 +1,72 @@
+@{
+    ViewData["Title"] = "Contact Us";
+}
+
+<style>
+    .contact-hero { background: #0f172a; padding: 70px 0 50px; }
+    .contact-main { padding: 48px 0 72px; background: #fff; }
+    .contact-card {
+        border: 1px solid #e1e1e1;
+        box-shadow: 0 4px 30px rgba(0,0,0,0.04);
+        padding: 1.5rem;
+        height: 100%;
+    }
+    .contact-icon {
+        width: 44px; height: 44px;
+        display: inline-flex; align-items: center; justify-content: center;
+        background: #eff6ff; color: #3b82f6; font-size: 1.2rem; margin-bottom: 0.9rem;
+    }
+</style>
+
+<section class="contact-hero">
+    <div class="container">
+        <span class="text-uppercase" style="color:#2dd4bf; font-size:0.72rem; font-weight:700; letter-spacing:0.08em;">Get in touch</span>
+        <h1 class="text-white mt-2 mb-2" style="font-family:'Sora','Inter',sans-serif; font-weight:700;">Contact Us</h1>
+        <p class="mb-0" style="color:#cbd5e1; max-width:560px;">Questions about your account, a result or a test request? Reach the laboratory support team using any of the details below.</p>
+    </div>
+</section>
+
+<section class="contact-main">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="contact-card">
+                    <div class="contact-icon"><i class="bi bi-geo-alt-fill"></i></div>
+                    <h6 class="fw-bold">Visit us</h6>
+                    <p class="text-muted mb-0">123 Medical Drive, Gqeberha,<br />Eastern Cape, South Africa</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="contact-card">
+                    <div class="contact-icon"><i class="bi bi-telephone-fill"></i></div>
+                    <h6 class="fw-bold">Call us</h6>
+                    <p class="text-muted mb-1">+27 (0) 41 504 1111</p>
+                    <p class="text-muted small mb-0">Monday to Friday, 07:30 to 16:30</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="contact-card">
+                    <div class="contact-icon"><i class="bi bi-envelope-at-fill"></i></div>
+                    <h6 class="fw-bold">E-mail us</h6>
+                    <p class="mb-1"><a href="mailto:support@hemaflow.co.za" class="text-decoration-none">support@hemaflow.co.za</a></p>
+                    <p class="text-muted small mb-0">We aim to reply within one working day.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="contact-card d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div>
+                        <h6 class="fw-bold mb-1">Already have an account?</h6>
+                        <p class="text-muted mb-0">Sign in to view your results and requests, or register as a new patient.</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-dark rounded-0 px-4">Sign In</a>
+                        <a asp-controller="Account" asp-action="Register" class="btn btn-outline-dark rounded-0 px-4">Register</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

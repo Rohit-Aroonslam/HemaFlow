@@ -1,0 +1,172 @@
+﻿@model IEnumerable<Project.Models.Entities.DoctorRequestItem>
+@{
+    Layout = "_DoctorLayout";
+    ViewData["Title"] = "Track Test Requests";
+}
+
+<div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+        <h4 class="fw-700 mb-1" style="color: #0f172a;">Test Requests</h4>
+        <p class="text-muted mb-0">Track all your submitted test requests.</p>
+    </div>
+    <a asp-controller="Doctor" asp-action="CreateTestRequest" class="btn btn-dark rounded-3 px-4">
+        <i class="bi bi-plus-lg me-2"></i>New Request
+    </a>
+</div>
+
+<!-- ═══ SUCCESS CONFIRMATION TOAST ═══ -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success rounded-0 border-0 border-start border-3 border-success mb-4 d-flex align-items-center justify-content-between alert-dismissible fade show" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-check-circle-fill text-success fs-5 me-2"></i>
+            <div>
+                <strong>Test Request Successfully Processed!</strong>
+                <div class="small text-muted">@TempData["SuccessMessage"]</div>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="glass-card p-3 mb-4">
+    <div class="d-flex gap-2 flex-wrap">
+        <button onclick="filterStatus('all')" id="btn-all" class="btn btn-sm rounded-3 px-3 btn-dark filter-btn">
+            All <span class="badge bg-light text-dark ms-1 status-count" id="count-all">0</span>
+        </button>
+        <button onclick="filterStatus('submitted')" id="btn-submitted" class="btn btn-sm rounded-3 px-3 btn-outline-secondary filter-btn">
+            Submitted <span class="badge bg-secondary-subtle text-secondary ms-1 status-count" id="count-submitted">0</span>
+        </button>
+        <button onclick="filterStatus('in progress')" id="btn-inprogress" class="btn btn-sm rounded-3 px-3 btn-outline-secondary filter-btn">
+            In Progress <span class="badge bg-secondary-subtle text-secondary ms-1 status-count" id="count-inprogress">0</span>
+        </button>
+        <button onclick="filterStatus('awaiting release')" id="btn-awaitingrelease" class="btn btn-sm rounded-3 px-3 btn-outline-secondary filter-btn">
+            Awaiting Release <span class="badge bg-secondary-subtle text-secondary ms-1 status-count" id="count-awaitingrelease">0</span>
+        </button>
+        <button onclick="filterStatus('completed')" id="btn-completed" class="btn btn-sm rounded-3 px-3 btn-outline-secondary filter-btn">
+            Completed <span class="badge bg-secondary-subtle text-secondary ms-1 status-count" id="count-completed">0</span>
+        </button>
+    </div>
+</div>
+
+<div class="glass-card p-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr class="text-muted small">
+                    <th>REQUEST ID</th>
+                    <th>PATIENT</th>
+                    <th>TEST REQUIRED</th>
+                    <th>DATE CREATED</th>
+                    <th>PRIORITY</th>
+                    <th>STATUS</th>
+                    <th class="text-end">ACTION</th>
+                </tr>
+            </thead>
+            <tbody id="requestsBody">
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var req in Model)
+                    {
+                        var statusLower = req.Status?.ToLower() ?? "submitted";
+                        var badgeClass = statusLower switch
+                        {
+                            "completed" => "badge-completed",
+                            "in progress" => "badge-inprogress",
+                            "awaiting release" => "badge-awaiting-release",
+                            "cancelled" => "bg-secondary-subtle text-secondary",
+                            _ => "badge-submitted"
+                        };
+
+                        var priorityClass = req.Urgency?.ToLower() switch
+                        {
+                            "stat" => "badge-stat",
+                            "urgent" => "badge-urgent",
+                            _ => "badge-routine"
+                        };
+
+                        <tr data-status="@statusLower">
+                            <td><span class="fw-bold">#REQ-@req.TestRequestId.ToString("D3")</span></td>
+                            <td class="fw-bold text-dark">@req.PatientName</td>
+                            <td class="small">
+                                <span class="fw-semibold text-dark">@req.TestName</span>
+                                <br><span class="text-muted" style="font-size:0.72rem;">@req.Category</span>
+                            </td>
+                            <td>@req.OrderDate.ToString("yyyy-MM-dd")</td>
+                            <td><span class="badge @priorityClass rounded-pill px-3">@req.Urgency</span></td>
+                            <td><span class="badge @badgeClass rounded-pill px-3">@req.Status</span></td>
+                            <td class="text-end">
+                                <a asp-controller="Doctor" asp-action="RequestDetails" asp-route-id="@req.TestRequestId" class="btn btn-sm btn-link text-dark text-decoration-none">Details</a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+        <div id="noResults" class="text-center text-muted py-4" style="display:none;">
+            <i class="bi bi-inbox fs-3 d-block mb-2 opacity-40"></i>
+            No requests found for this status.
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function calculateCounts() {
+            const rows = document.querySelectorAll('#requestsBody tr');
+            let totals = { all: 0, submitted: 0, 'in progress': 0, 'awaiting release': 0, completed: 0 };
+
+            rows.forEach(row => {
+                const status = row.dataset.status;
+                totals.all++;
+                if (totals[status] !== undefined) {
+                    totals[status]++;
+                }
+            });
+
+            document.getElementById('count-all').textContent = totals.all;
+            document.getElementById('count-submitted').textContent = totals.submitted;
+            document.getElementById('count-inprogress').textContent = totals['in progress'];
+            document.getElementById('count-awaitingrelease').textContent = totals['awaiting release'];
+            document.getElementById('count-completed').textContent = totals.completed;
+        }
+
+        function filterStatus(status) {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('btn-dark');
+                btn.classList.add('btn-outline-secondary');
+
+                const badge = btn.querySelector('.status-count');
+                if (badge) {
+                    badge.className = "badge bg-secondary-subtle text-secondary ms-1 status-count";
+                }
+            });
+
+            const activeId = 'btn-' + status.replace(/ /g, '');
+            const activeBtn = document.getElementById(activeId);
+            if (activeBtn) {
+                activeBtn.classList.remove('btn-outline-secondary');
+                activeBtn.classList.add('btn-dark');
+
+                const activeBadge = activeBtn.querySelector('.status-count');
+                if (activeBadge) {
+                    activeBadge.className = "badge bg-light text-dark ms-1 status-count";
+                }
+            }
+
+            const rows = document.querySelectorAll('#requestsBody tr');
+            let visible = 0;
+            rows.forEach(row => {
+                const show = status === 'all' || (row.dataset.status || '') === status;
+                row.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            calculateCounts();
+        });
+    </script>
+}

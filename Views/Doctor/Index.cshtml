@@ -1,0 +1,122 @@
+﻿@model Project.Models.Doctor.DoctorDashboardViewModel
+@{
+    Layout = "_DoctorLayout";
+    ViewData["Title"] = "Doctor Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-end mb-5">
+    <div>
+        <p class="text-muted small text-uppercase fw-bold mb-1" style="letter-spacing:2px;">Welcome back</p>
+        <h2 class="serif-brand mb-0">Dr. @Model.DoctorSurname</h2>
+    </div>
+    <a asp-controller="Doctor" asp-action="CreateTestRequest" class="btn btn-dark rounded-3 px-4 shadow-sm">
+        <i class="bi bi-plus-lg me-2"></i>New Test Request
+    </a>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <a asp-controller="Doctor" asp-action="TrackRequests" class="text-decoration-none">
+            <div class="glass-card p-4 text-center dashboard-stat-card">
+                <p class="text-muted small text-uppercase fw-bold mb-1">Submitted</p>
+                <h2 class="serif-brand mb-0">@Model.SubmittedCount</h2>
+                <p class="text-muted small mb-0 mt-2"><i class="bi bi-arrow-right-circle me-1"></i>View requests</p>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a asp-controller="Doctor" asp-action="TrackRequests" class="text-decoration-none">
+            <div class="glass-card p-4 text-center dashboard-stat-card">
+                <p class="text-muted small text-uppercase fw-bold mb-1">In Progress</p>
+                <h2 class="serif-brand mb-0">@Model.InProgressCount</h2>
+                <p class="text-muted small mb-0 mt-2"><i class="bi bi-arrow-right-circle me-1"></i>Track details</p>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a asp-controller="Doctor" asp-action="TrackRequests" class="text-decoration-none">
+            <div class="glass-card p-4 text-center dashboard-stat-card">
+                <p class="text-muted small text-uppercase fw-bold mb-1">Awaiting Release</p>
+                <h2 class="serif-brand mb-0">@Model.AwaitingReleaseCount</h2>
+                <p class="text-muted small mb-0 mt-2"><i class="bi bi-arrow-right-circle me-1"></i>Review results</p>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a asp-controller="Doctor" asp-action="Alerts" class="text-decoration-none">
+            <div class="glass-card p-4 text-center dashboard-stat-card border border-danger border-opacity-10 bg-danger-subtle bg-opacity-10">
+                <p class="text-danger small text-uppercase fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Alerts</p>
+                <h2 class="serif-brand text-danger mb-0">@Model.AlertCount</h2>
+                <p class="text-danger small mb-0 mt-2"><i class="bi bi-arrow-right-circle me-1"></i>Action required</p>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="glass-card p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="serif-brand mb-0">Recent Activity & Completed Results</h5>
+        <a asp-controller="Doctor" asp-action="TrackRequests" class="btn btn-sm btn-outline-secondary rounded-3 px-3">View All</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr class="text-muted small">
+                    <th>REQUEST ID</th>
+                    <th>PATIENT</th>
+                    <th>DATE CREATED</th>
+                    <th>PRIORITY</th>
+                    <th>STATUS</th>
+                    <th class="text-end">ACTION</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.RecentRequests.Count == 0)
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-4">No test requests yet. Use "New Test Request" to create the first one.</td></tr>
+                }
+                @foreach (var r in Model.RecentRequests)
+                {
+                    var badge = r.Status switch
+                    {
+                        "Completed" => "badge-completed",
+                        "In Progress" => "badge-inprogress",
+                        "Awaiting Release" => "badge-awaiting-release",
+                        "Cancelled" => "bg-secondary-subtle text-secondary",
+                        _ => "badge-submitted"
+                    };
+                    var prio = r.Urgency switch { "STAT" => "badge-stat", "Urgent" => "badge-urgent", _ => "badge-routine" };
+                    <tr>
+                        <td><span class="fw-bold">#REQ-@r.TestRequestId.ToString("D3")</span></td>
+                        <td>@r.PatientName</td>
+                        <td>@r.OrderDate.ToString("yyyy-MM-dd")</td>
+                        <td><span class="badge @prio rounded-pill px-3">@r.Urgency</span></td>
+                        <td><span class="badge @badge rounded-pill px-3">@r.Status</span></td>
+                        <td class="text-end">
+                            @if (r.HasResults)
+                            {
+                                <a asp-controller="Doctor" asp-action="ViewResults" asp-route-id="@r.TestRequestId" class="btn btn-sm btn-link text-dark text-decoration-none">Results</a>
+                            }
+                            else
+                            {
+                                <a asp-controller="Doctor" asp-action="RequestDetails" asp-route-id="@r.TestRequestId" class="btn btn-sm btn-link text-dark text-decoration-none">View</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .dashboard-stat-card {
+        transition: transform 0.15s, box-shadow 0.15s;
+        cursor: pointer;
+    }
+
+        .dashboard-stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.09);
+        }
+</style>

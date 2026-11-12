@@ -1,0 +1,120 @@
+﻿@model List<Project.Models.LabManager.Technician>
+@{
+    ViewData["Title"] = "Assigned Technicians";
+    var available = ViewBag.AvailableTechnicians as List<Project.Models.LabManager.Technician>
+                    ?? new List<Project.Models.LabManager.Technician>();
+    bool archived = ViewBag.TestTypeArchived == true;
+}
+@* Shows the temporary password when a technician created from here could not be e-mailed *@
+<partial name="~/Views/LabManager/_NewAccountPassword.cshtml" />
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Technicians - @ViewBag.TestTypeName</h2>
+    <div class="d-flex gap-2">
+        <a asp-controller="Technician" asp-action="Create" asp-route-testTypeId="@ViewBag.TestTypeId" class="btn btn-success">
+            <i class="bi bi-person-plus me-1"></i>New Technician
+        </a>
+        <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+    </div>
+</div>
+
+<p class="text-muted">@Model.Count technician(s) currently able to perform this test.</p>
+
+@if (!archived && Model.Count < 2)
+{
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        This test type has fewer than <strong>2 technicians</strong>. Assign at least two so the test can always be performed.
+    </div>
+}
+
+<!-- Assigned technicians -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Employee #</th>
+                    <th>Email</th>
+                    <th>Contact</th>
+                    <th class="text-end pe-4 text-nowrap">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td>@t.Surname, @t.Name</td>
+                        <td>@t.EmployeeNumber</td>
+                        <td>@t.Email</td>
+                        <td>@t.ContactNumber</td>
+                        <td class="text-end pe-4 text-nowrap">
+                            <form asp-action="RemoveTechnician" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@ViewBag.TestTypeId" />
+                                <input type="hidden" name="technicianId" value="@t.Id" />
+                                <button type="submit" class="btn btn-danger btn-sm"
+                                        onclick="return hemaConfirm(this, 'Remove @t.Name @t.Surname from @ViewBag.TestTypeName?', { title: 'Remove Technician', confirmText: 'Remove' })">
+                                    <i class="bi bi-person-dash"></i> Remove
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="5" class="text-center text-muted py-4">No technicians assigned to this test type yet.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Assign existing technicians straight from the test type -->
+@if (!archived)
+{
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <h5 class="mb-1">Assign Technicians</h5>
+            <small class="text-muted d-block mb-3">
+                Tick the technicians who may perform this test and click <strong>Assign Selected</strong>.
+            </small>
+
+            @if (available.Any())
+            {
+                <form asp-action="AssignTechnicians" method="post">
+                    <input type="hidden" name="id" value="@ViewBag.TestTypeId" />
+
+                    <div class="card bg-light border-0 p-3 mb-3">
+                        <div style="max-height:260px; overflow-y:auto;">
+                            @foreach (var t in available)
+                            {
+                                <div class="form-check mb-1">
+                                    <input type="checkbox" name="technicianIds" value="@t.Id"
+                                           class="form-check-input" id="tech_@t.Id" />
+                                    <label class="form-check-label" for="tech_@t.Id">
+                                        @t.Surname, @t.Name
+                                        <span class="text-muted small">(@t.EmployeeNumber, @t.Email)</span>
+                                    </label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-lg me-1"></i>Assign Selected
+                    </button>
+                </form>
+            }
+            else
+            {
+                <div class="card bg-light border-0 p-3">
+                    <p class="text-muted mb-0 small">
+                        All active technicians are already assigned to this test type.
+                        Use <strong>New Technician</strong> to add someone new.
+                    </p>
+                </div>
+            }
+        </div>
+    </div>
+}

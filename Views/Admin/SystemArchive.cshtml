@@ -1,0 +1,117 @@
+﻿@model Project.Models.SystemArchiveViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Archived Records | Hema Flow";
+}
+
+<div class="row align-items-center mb-4 g-3">
+    <div class="col-md-8">
+        <h4 class="fw-700 mb-1" style="color: #0f172a;">Archived Records</h4>
+        <p class="text-muted small mb-0">Soft-deleted records are stored here. Restore any record to make it active again.</p>
+    </div>
+</div>
+
+@* Search + filter by type *@
+<div class="row g-3 mb-3 align-items-center">
+    <div class="col-md-5">
+        <div class="input-group bg-white border px-2 py-1">
+            <span class="input-group-text bg-transparent border-0 text-muted p-0 me-2"><i class="bi bi-search"></i></span>
+            <input type="text" id="archiveSearch" class="form-control border-0 bg-transparent shadow-none p-0 small text-dark" placeholder="Search by name, reference, reason or who archived it...">
+        </div>
+    </div>
+    <div class="col-md-7 text-md-end"><span class="text-muted small" id="archiveCount"></span></div>
+</div>
+<div class="d-flex gap-2 mb-4 flex-wrap">
+    <button type="button" class="btn btn-dark py-1 px-3 type-filter active" data-type="" style="font-size:0.75rem !important;">All (@Model.Records.Count)</button>
+    @foreach (var type in Model.Records.Select(r => r.EntityType).Distinct())
+    {
+        <button type="button" class="btn btn-outline-secondary py-1 px-3 type-filter" data-type="@type" style="font-size:0.75rem !important;">
+            @type (@Model.Records.Count(r => r.EntityType == type))
+        </button>
+    }
+</div>
+
+<div class="card mb-0">
+    <div class="p-0">
+        @if (!Model.Records.Any())
+        {
+            <div class="p-4 text-muted small">No archived records found.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size:0.82rem;" id="archiveTable">
+                    <thead>
+                        <tr class="bg-light text-muted text-uppercase fw-600" style="font-size:0.68rem; border-bottom:1px solid #e2e8f0;">
+                            <th class="ps-3 py-2">Type</th>
+                            <th class="py-2">Record</th>
+                            <th class="py-2">Reference</th>
+                            <th class="py-2">Reason Archived</th>
+                            <th class="py-2">Archived By</th>
+                            <th class="py-2">Date Archived</th>
+                            <th class="text-end pe-3 py-2">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.Records.OrderByDescending(x => x.ArchivedOn))
+                        {
+                            <tr style="border-bottom:1px solid #f1f5f9;" data-type="@r.EntityType" data-search="@((r.DisplayName + " " + r.Reference + " " + r.Reason + " " + r.ArchivedBy + " " + r.EntityType).ToLowerInvariant())">
+                                <td class="ps-3 py-3">
+                                    <span class="patient-status-pill text-primary border-primary bg-white" style="font-size:0.65rem;">@r.EntityType</span>
+                                </td>
+                                <td class="fw-600 text-dark">@r.DisplayName</td>
+                                <td class="text-muted x-small font-monospace">@r.Reference</td>
+                                <td class="text-muted small">@r.Reason</td>
+                                <td class="text-muted x-small">@(string.IsNullOrWhiteSpace(r.ArchivedBy) ? "-" : r.ArchivedBy)</td>
+                                <td class="text-muted x-small">@r.ArchivedOn.ToString("d MMM yyyy HH:mm")</td>
+                                <td class="text-end pe-3">
+                                    <form asp-action="RestoreEntity" asp-controller="Admin" method="post" class="d-inline"
+                                          data-confirm="@r.DisplayName will be restored and become active again."
+                                          data-confirm-title="Restore @r.DisplayName?"
+                                          data-confirm-text="Restore">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="entityType" value="@r.EntityType" />
+                                        <input type="hidden" name="entityId" value="@r.EntityId" />
+                                        <button type="submit" class="btn btn-outline-success py-1 px-2" style="font-size:0.72rem !important;">
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i>Restore
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const search = document.getElementById('archiveSearch');
+            const counter = document.getElementById('archiveCount');
+            let activeType = '';
+            function apply() {
+                const q = (search.value || '').trim().toLowerCase();
+                let shown = 0;
+                document.querySelectorAll('#archiveTable tbody tr').forEach(row => {
+                    const ok = (!activeType || row.dataset.type === activeType) && (!q || row.dataset.search.includes(q));
+                    row.style.display = ok ? '' : 'none';
+                    if (ok) shown++;
+                });
+                counter.textContent = shown + ' record' + (shown === 1 ? '' : 's') + ' shown';
+            }
+            search.addEventListener('input', apply);
+            document.querySelectorAll('.type-filter').forEach(btn => btn.addEventListener('click', function () {
+                document.querySelectorAll('.type-filter').forEach(b => {
+                    b.classList.remove('active', 'btn-dark'); b.classList.add('btn-outline-secondary');
+                });
+                this.classList.add('active', 'btn-dark'); this.classList.remove('btn-outline-secondary');
+                activeType = this.dataset.type;
+                apply();
+            }));
+            if (document.getElementById('archiveTable')) apply();
+        })();
+    </script>
+}

@@ -1,0 +1,236 @@
+﻿@{
+    Layout = "_DoctorLayout";
+    ViewData["Title"] = "My Reports";
+    var today = DateTime.Now.ToString("yyyy-MM-dd");
+
+    var reportData = (ViewBag.History as List<string[]>) ?? new List<string[]>();
+}
+
+<div class="mb-4">
+    <h4 class="fw-700 mb-1" style="color: #0f172a;">Doctor Reports</h4>
+    <p class="text-muted mb-0">Generate and download PDF reports of your submitted test requests.</p>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger rounded-0 border-0 border-start border-3 border-danger small mb-4">
+        <i class="bi bi-exclamation-circle-fill me-1"></i> @TempData["Error"]
+    </div>
+}
+
+<!-- METRIC CARDS -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="glass-card p-3 d-flex align-items-center gap-3">
+            <div class="p-3 bg-light rounded-3 text-primary">
+                <i class="bi bi-bar-chart-line fs-4"></i>
+            </div>
+            <div>
+                <span class="text-muted text-uppercase fw-bold small d-block">Submitted Requests</span>
+                <h3 class="mb-0 fw-bold">@ViewBag.SubmittedRequests</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-3 d-flex align-items-center gap-3">
+            <div class="p-3 bg-light rounded-3 text-success">
+                <i class="bi bi-file-earmark-check fs-4"></i>
+            </div>
+            <div>
+                <span class="text-muted text-uppercase fw-bold small d-block">Reports Generated</span>
+                <h3 class="mb-0 fw-bold">@ViewBag.ReportsGenerated</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-3 d-flex align-items-center gap-3">
+            <div class="p-3 bg-light rounded-3 text-warning">
+                <i class="bi bi-clock-history fs-4"></i>
+            </div>
+            <div>
+                <span class="text-muted text-uppercase fw-bold small d-block">Last Generated</span>
+                <h3 class="mb-0 fw-bold fs-5 text-dark">@ViewBag.LastGenerated</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN WORKSPACE SIDE-BY-SIDE -->
+<div class="row g-4">
+    <!-- LEFT SIDEBAR: FORM GENERATOR -->
+    <div class="col-lg-4">
+        <div class="glass-card p-4 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-file-earmark-pdf text-danger fs-5"></i>
+                <h6 class="fw-bold mb-0">Generate & Download Report</h6>
+            </div>
+
+            <form method="post" asp-controller="Doctor" asp-action="GenerateReport" id="reportForm" onsubmit="return handleReportGeneration(event)">
+                @Html.AntiForgeryToken()
+                <div class="mb-3">
+                    <label class="form-label small text-muted text-uppercase fw-bold mb-1">Priority Filter</label>
+                    <select name="priorityFilter" class="form-select bg-light border-0">
+                        <option value="">All Priorities</option>
+                        <option value="Routine">Routine</option>
+                        <option value="Urgent">Urgent</option>
+                        <option value="STAT">STAT</option>
+                    </select>
+                    <span class="text-muted style-tiny d-block mt-1">Results will be compiled into a single document.</span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small text-muted text-uppercase fw-bold mb-1">Quick Range</label>
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-outline-secondary btn-sm quick-range-btn rounded-3 me-1" data-days="30">30 Days</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm quick-range-btn rounded-3 me-1" data-days="90">3 Months</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm quick-range-btn rounded-3" data-days="365">1 Year</button>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small text-muted text-uppercase fw-bold mb-1">From Date *</label>
+                        <input type="date" id="fromDate" name="fromDate" class="form-control bg-light border-0" max="@today" onchange="validateDates()">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small text-muted text-uppercase fw-bold mb-1">To Date *</label>
+                        <input type="date" id="toDate" name="toDate" class="form-control bg-light border-0" max="@today" onchange="validateDates()">
+                    </div>
+                </div>
+
+                <!-- RED ALERT VALIDATION BANNER -->
+                <div id="dateError" class="alert alert-danger rounded-3 py-2 small mb-3 d-none">
+                    <i class="bi bi-exclamation-circle-fill me-1"></i>
+                    <span id="dateErrorMessage">Please ensure all fields are filled.</span>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn btn-dark w-100 py-2 rounded-3 mt-2">
+                    <i class="bi bi-file-earmark-pdf me-2"></i>Generate & Download PDF
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: PREVIOUSLY GENERATED REPORTS TABLE -->
+    <div class="col-lg-8">
+        <div class="glass-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-archive text-primary"></i>
+                    <h6 class="fw-bold mb-0">Previously Generated Reports</h6>
+                </div>
+                <span class="badge bg-light text-dark border fw-normal rounded-3">@reportData.Count report(s)</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="text-muted small text-uppercase">
+                        <tr>
+                            <th>File Name</th>
+                            <th>Filters used</th>
+                            <th class="text-end">Generated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (reportData.Count == 0)
+                        {
+                            <tr><td colspan="3" class="text-center text-muted py-4">No reports generated yet.</td></tr>
+                        }
+                        @foreach (var item in reportData)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-file-earmark-pdf text-danger fs-5"></i>
+                                        <span class="fw-medium small">@item[0]</span>
+                                    </div>
+                                </td>
+                                <td class="text-muted small">@item[1]</td>
+                                <td class="text-end text-muted small">@item[2]</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SUCCESS TOAST -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+    <div id="successToast" class="toast align-items-center text-white bg-dark border-0 shadow-lg p-2" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body d-flex align-items-center gap-2">
+                <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                <div>
+                    <strong class="d-block text-white">Report Generated!</strong>
+                    <span class="text-white-50 small">Your PDF compilation request finished successfully.</span>
+                </div>
+            </div>
+            <button type="button" class="btn-close btn-close-white m-auto me-2" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.quick-range-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const days = parseInt(this.dataset.days, 10);
+                const to = new Date();
+                const from = new Date();
+                from.setDate(from.getDate() - days);
+                const fmt = d => d.toISOString().split('T')[0];
+                document.getElementById('fromDate').value = fmt(from);
+                document.getElementById('toDate').value = fmt(to);
+                validateDates();
+
+                document.querySelectorAll('.quick-range-btn').forEach(b => b.classList.remove('btn-dark', 'active'));
+                document.querySelectorAll('.quick-range-btn').forEach(b => b.classList.add('btn-outline-secondary'));
+                this.classList.remove('btn-outline-secondary');
+                this.classList.add('btn-dark', 'active');
+            });
+        });
+
+        function validateDates() {
+            const fromInput = document.getElementById('fromDate');
+            const toInput = document.getElementById('toDate');
+            const errorDiv = document.getElementById('dateError');
+            const errorMessage = document.getElementById('dateErrorMessage');
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            let error = '';
+
+            if (!fromInput.value || !toInput.value) {
+                error = 'Please ensure all fields are filled.';
+            } else if (fromInput.value > todayStr) {
+                error = 'From Date cannot be in the future.';
+            } else if (toInput.value > todayStr) {
+                error = 'To Date cannot be in the future.';
+            } else if (fromInput.value > toInput.value) {
+                error = 'From Date cannot be after To Date.';
+            }
+
+            if (error) {
+                errorMessage.textContent = error;
+                errorDiv.classList.remove('d-none');
+                return false;
+            } else {
+                errorDiv.classList.add('d-none');
+                return true;
+            }
+        }
+
+        function handleReportGeneration(event) {
+            if (!validateDates()) {
+                event.preventDefault();
+                return false;
+            }
+
+            const toastElement = document.getElementById('successToast');
+            const toast = new bootstrap.Toast(toastElement, { delay: 4000 });
+            toast.show();
+            return true;
+        }
+    </script>
+}

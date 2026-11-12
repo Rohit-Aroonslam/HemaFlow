@@ -1,0 +1,136 @@
+﻿@model Project.Models.Doctor.TestResultsViewModel
+@{
+    Layout = "_DoctorLayout";
+    ViewData["Title"] = "Test Results";
+
+    var TestRequestId = Model.TestRequestId;
+    var PatientName = Model.PatientName;
+    var PatientSurname = Model.PatientSurname;
+    var results = Model.Results;
+    var abnormalCount = Model.AbnormalCount;
+}
+
+<div class="mb-4">
+    <a asp-controller="Doctor" asp-action="TrackRequests" class="btn btn-sm btn-outline-secondary rounded-pill px-3 mb-3">
+        <i class="bi bi-arrow-left me-1"></i> Back to Requests
+    </a>
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h4 class="fw-700 mb-1" style="color: #0f172a;">Results - Request #REQ-@TestRequestId.ToString("D3")</h4>
+            <p class="text-muted mb-0">
+                Patient: <strong>@PatientName @PatientSurname</strong> &nbsp;|&nbsp;
+                Completed: <strong>@(Model.CompletedAt?.ToString("yyyy-MM-dd") ?? "-")</strong>
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="ResultsPdf" asp-controller="Doctor" asp-route-id="@TestRequestId" class="btn btn-outline-dark rounded-pill px-4">
+                <i class="bi bi-file-earmark-pdf me-2"></i>Download PDF
+            </a>
+            @if (Model.CanRelease)
+            {
+                <button class="btn btn-dark rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#releaseModal">
+                    <i class="bi bi-send me-2"></i>Release to Patient
+                </button>
+            }
+            else if (Model.IsReleased)
+            {
+                <span class="badge bg-success-subtle text-success rounded-pill px-4 py-2 align-self-center">
+                    <i class="bi bi-check-circle-fill me-1"></i>Released @Model.ReleasedOn?.ToString("yyyy-MM-dd")
+                </span>
+            }
+        </div>
+    </div>
+</div>
+
+@if (abnormalCount > 0)
+{
+    <div class="alert border-0 rounded-3 mb-4" style="background:#fff1f2; border-left:4px solid #f43f5e !important;">
+        <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+        <strong class="text-danger">@abnormalCount abnormal result@(abnormalCount > 1 ? "s" : "") detected.</strong>
+        <span class="text-muted small ms-2">Highlighted rows below require your attention.</span>
+    </div>
+}
+
+<div class="glass-card p-4 mb-4">
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr class="text-muted small">
+                    <th>TEST TYPE</th>
+                    <th>RESULT</th>
+                    <th>UNIT</th>
+                    <th>NORMAL RANGE</th>
+                    <th>STATUS</th>
+                    <th>NOTES</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var result in results)
+                {
+                    <tr class="@(result.IsAbnormal ? "abnormal-flag" : "")">
+                        <td>
+                            <span class="fw-bold">@result.TestTypeName</span>
+                            @if (result.IsAbnormal)
+                            {
+                                <i class="bi bi-exclamation-circle-fill text-danger ms-2"></i>
+                            }
+                        </td>
+                        <td><strong class="@(result.IsAbnormal ? "text-danger" : "")">@result.ResultValue</strong></td>
+                        <td class="text-muted small">@result.Units</td>
+                        <td class="text-muted small">@(string.IsNullOrEmpty(result.NormalRangeMin) ? "-" : result.NormalRangeMin) – @(string.IsNullOrEmpty(result.NormalRangeMax) ? "-" : result.NormalRangeMax)</td>
+                        <td>
+                            <span class="badge @(result.IsAbnormal ? "bg-danger-subtle text-danger" : "bg-success-subtle text-success") rounded-pill px-3">
+                                @(result.IsAbnormal ? "Abnormal " + result.Direction : "Normal")
+                            </span>
+                        </td>
+                        <td class="text-muted small">@(string.IsNullOrEmpty(result.Notes) ? "-" : result.Notes)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="glass-card p-4">
+    @if (!string.IsNullOrEmpty(Model.VerifiedBy) && Model.VerifiedAt.HasValue)
+    {
+        <p class="small mb-0">
+            <i class="bi bi-patch-check-fill text-success me-2"></i>
+            Verified by <strong>@Model.VerifiedBy</strong> on @Model.VerifiedAt.Value.ToString("yyyy-MM-dd") at @Model.VerifiedAt.Value.ToString("HH:mm").
+        </p>
+    }
+    else
+    {
+        <p class="small mb-0 text-muted"><i class="bi bi-hourglass-split me-2"></i>The lab has not completed verification of every result yet.</p>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.DoctorNote))
+    {
+        <hr />
+        <p class="small mb-0"><strong>Your note to the patient:</strong><br />@Model.DoctorNote</p>
+    }
+</div>
+
+@if (Model.CanRelease)
+{
+    <div class="modal fade" id="releaseModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-3">
+                <form asp-controller="Doctor" asp-action="ReleaseResults" asp-route-id="@TestRequestId" method="post">
+                    <div class="modal-header bg-dark text-white px-4 py-3">
+                        <h5 class="modal-title fs-6"><i class="bi bi-send me-2"></i>Release results to @PatientName @PatientSurname</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p class="small text-muted">The patient will be able to see these results and is notified by e-mail. Add a short note explaining what they mean.</p>
+                        <label class="form-label small text-muted fw-bold">Note to the patient</label>
+                        <textarea name="doctorNote" rows="4" maxlength="1000" required class="form-control"></textarea>
+                    </div>
+                    <div class="modal-footer px-4 py-3 bg-light rounded-bottom-3">
+                        <button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-dark rounded-3 px-4">Release results</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

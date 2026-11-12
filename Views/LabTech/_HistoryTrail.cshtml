@@ -1,0 +1,54 @@
+@model List<Project.Models.LabManager.QueueItemEvent>
+@*
+    Reusable compact audit-trail timeline for a single QueueItem - used on
+    CaptureResult (review mode), VerifyResult, and VerificationHistory's
+    "View Trail" modal. Shows every step a test has been through: Received,
+    Started, Captured/Recaptured, SentForVerification, Verified/Returned.
+*@
+@{
+    (string icon, string bg, string fg) IconFor(string eventType) => eventType switch
+    {
+        "Received"             => ("bi-inbox", "bg-light", "text-secondary"),
+        "Started"               => ("bi-play-circle", "bg-primary bg-opacity-10", "text-primary"),
+        "Captured"               => ("bi-clipboard-check", "bg-info bg-opacity-10", "text-info"),
+        "Recaptured"             => ("bi-arrow-repeat", "bg-warning bg-opacity-15", "text-warning-emphasis"),
+        "SentForVerification"   => ("bi-send", "bg-secondary bg-opacity-10", "text-secondary"),
+        "Verified"               => ("bi-check-circle-fill", "bg-success bg-opacity-10", "text-success"),
+        "Returned"               => ("bi-arrow-return-left", "bg-danger bg-opacity-10", "text-danger"),
+        _                        => ("bi-dot", "bg-light", "text-muted")
+    };
+
+    string LabelFor(string eventType) => eventType switch
+    {
+        "SentForVerification" => "Sent for Verification",
+        _ => eventType
+    };
+}
+
+<!-- Horizontal step-by-step trail: Received → Started → Captured → ... → Verified/Returned,
+     read left-to-right with connecting lines instead of a stacked vertical list. -->
+<div class="trail-stepper">
+    @if (Model == null || !Model.Any())
+    {
+        <div class="trail-empty">No history recorded for this test yet.</div>
+    }
+    else
+    {
+        @foreach (var ev in Model.OrderBy(e => e.Timestamp))
+        {
+            var (icon, bg, fg) = IconFor(ev.EventType);
+            <div class="trail-step">
+                <div class="trail-step-icon @bg @fg">
+                    <i class="bi @icon"></i>
+                </div>
+                <div class="trail-step-label">@LabelFor(ev.EventType)</div>
+                <div class="trail-step-time">@ev.Timestamp.ToString("dd MMM HH:mm")</div>
+                <div class="trail-step-by">By @ev.By</div>
+                @if (!string.IsNullOrWhiteSpace(ev.Note))
+                {
+                    <div class="trail-step-note" title="@ev.Note">&ldquo;@ev.Note&rdquo;</div>
+                }
+            </div>
+        }
+    }
+</div>

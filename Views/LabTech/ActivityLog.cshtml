@@ -1,0 +1,76 @@
+@model List<Project.Models.Entities.StaffActivityLog>
+@{
+    Layout = "_LabTechLayout";
+    ViewData["Title"] = "My Activity";
+
+    (string Icon, string Bg, string Fg) ToneFor(string? code) => code switch
+    {
+        "warning" => ("bi-exclamation-triangle", "#fffbeb", "#b45309"),
+        "error"   => ("bi-x-circle", "#fee2e2", "#dc2626"),
+        "success" => ("bi-check-circle", "#d1fae5", "#065f46"),
+        _         => ("bi-info-circle", "#dbeafe", "#1e40af"),
+    };
+}
+
+<div class="mb-4">
+    <h2 class="serif-brand mb-1">My Activity</h2>
+    <p class="text-muted mb-0">A record of actions you've taken across the lab tech portal - test selections, captures, verifications, and account/security changes.</p>
+</div>
+
+<div class="glass-card p-4">
+    @if (!Model.Any())
+    {
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-clock-history fs-3 d-block mb-2 opacity-40"></i>
+            No activity recorded yet.
+        </div>
+    }
+    else
+    {
+        string? lastDate = null;
+        @foreach (var entry in Model)
+        {
+            var dateLabel = entry.Timestamp.Date == DateTime.Today ? "Today"
+                           : entry.Timestamp.Date == DateTime.Today.AddDays(-1) ? "Yesterday"
+                           : entry.Timestamp.ToString("dd MMMM yyyy");
+            if (dateLabel != lastDate)
+            {
+                <div class="activity-date-label">@dateLabel</div>
+                lastDate = dateLabel;
+            }
+            var tone = ToneFor(entry.LogType?.Code);
+            <div class="activity-row">
+                <span class="activity-icon-chip" style="background:@tone.Bg; color:@tone.Fg;"><i class="bi @tone.Icon"></i></span>
+                <div class="activity-row-body">
+                    <div class="fw-medium small">@entry.Action</div>
+                    @if (!string.IsNullOrWhiteSpace(entry.Detail))
+                    {
+                        <div class="text-muted" style="font-size:0.78rem;">@entry.Detail</div>
+                    }
+                </div>
+                <div class="activity-row-time text-muted" title="@entry.Timestamp.ToString("dd MMM yyyy HH:mm")">@entry.Timestamp.ToString("HH:mm")</div>
+            </div>
+        }
+    }
+</div>
+
+@section Styles {
+<style>
+    .activity-date-label {
+        font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+        color: #94a3b8; padding: 1rem 0 0.5rem;
+    }
+    .activity-date-label:first-child { padding-top: 0; }
+    .activity-row {
+        display: flex; align-items: flex-start; gap: 0.75rem;
+        padding: 0.65rem 0; border-bottom: 1px solid #f1f5f9;
+    }
+    .activity-row:last-child { border-bottom: 0; }
+    .activity-icon-chip {
+        width: 32px; height: 32px; flex-shrink: 0;
+        display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;
+    }
+    .activity-row-body { flex: 1; min-width: 0; }
+    .activity-row-time { font-size: 0.74rem; flex-shrink: 0; white-space: nowrap; }
+</style>
+}

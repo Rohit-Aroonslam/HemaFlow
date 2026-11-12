@@ -1,0 +1,296 @@
+@{
+    ViewData["Title"] = "Privacy Policy";
+}
+
+<style>
+    .privacy-hero {
+        background: #0f172a;
+        padding: 70px 0 50px;
+        border-bottom: 1px solid #0f172a;
+    }
+
+    .privacy-main {
+        padding: 48px 0 72px;
+        background: #fff;
+    }
+
+    .privacy-toc {
+        background: #fff;
+        border: 1px solid #e1e1e1;
+        box-shadow: 0 4px 30px rgba(0,0,0,0.04);
+        padding: 1.25rem;
+        position: sticky;
+        top: 96px;
+    }
+
+    .privacy-toc-title {
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #94a3b8;
+        margin-bottom: 0.75rem;
+    }
+
+    .privacy-toc a {
+        display: block;
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: #475569;
+        text-decoration: none;
+        padding: 0.4rem 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+        .privacy-toc a:last-child {
+            border-bottom: none;
+        }
+
+        .privacy-toc a:hover {
+            color: #3b82f6;
+        }
+
+    .privacy-section {
+        background: #fff;
+        border: 1px solid #e1e1e1;
+        box-shadow: 0 4px 30px rgba(0,0,0,0.04);
+        padding: 1.75rem 2rem;
+        margin-bottom: 1.25rem;
+        scroll-margin-top: 96px;
+    }
+
+    .privacy-section h2 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .privacy-section h2 .num {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: #eff6ff;
+        color: #3b82f6;
+        font-size: 0.78rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .privacy-section p, .privacy-section li {
+        font-size: 0.88rem;
+        line-height: 1.75;
+        color: #475569;
+    }
+
+    .privacy-section ul {
+        margin-bottom: 0;
+        padding-left: 1.1rem;
+    }
+
+    .popia-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+        padding: 0.25rem 0.65rem;
+    }
+
+    .rights-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.75rem;
+        margin-top: 0.75rem;
+    }
+
+    .rights-item {
+        border: 1px solid #e1e1e1;
+        background: #f8fafc;
+        padding: 0.9rem 1rem;
+    }
+
+        .rights-item .fw-600 {
+            font-size: 0.85rem;
+            color: #0f172a;
+        }
+
+        .rights-item p {
+            margin: 0.25rem 0 0;
+            font-size: 0.8rem;
+        }
+</style>
+
+<section class="privacy-hero">
+    <div class="container">
+        <span class="popia-badge mb-3"><i class="bi bi-shield-check"></i>POPIA Compliant</span>
+        <h1 class="fw-bold text-white mb-2" style="font-size: 2.1rem;">Privacy Policy</h1>
+        <p class="mb-0" style="color: rgba(255,255,255,0.55); max-width: 620px; line-height: 1.7;">
+            How Hema Flow collects, uses, and protects your personal and medical information, in line with South Africa's Protection of Personal Information Act (POPIA).
+        </p>
+        <p class="mt-3 mb-0" style="font-size: 0.78rem; color: rgba(255,255,255,0.35);">Last updated: 23 September 2026</p>
+    </div>
+</section>
+
+<section class="privacy-main">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-3 d-none d-lg-block">
+                <div class="privacy-toc">
+                    <div class="privacy-toc-title">On This Page</div>
+                    <a href="#introduction">1. Introduction</a>
+                    <a href="#information-we-collect">2. Information We Collect</a>
+                    <a href="#how-we-use-it">3. How We Use It</a>
+                    <a href="#legal-basis">4. Legal Basis for Processing</a>
+                    <a href="#sharing">5. Sharing of Information</a>
+                    <a href="#security">6. Data Security</a>
+                    <a href="#retention">7. Data Retention</a>
+                    <a href="#your-rights">8. Your Rights Under POPIA</a>
+                    <a href="#cookies">9. Cookies</a>
+                    <a href="#children">10. Children's Information</a>
+                    <a href="#changes">11. Changes to This Policy</a>
+                    <a href="#contact">12. Contact Us</a>
+                </div>
+            </div>
+
+            <div class="col-lg-9">
+                <div class="privacy-section" id="introduction">
+                    <h2><span class="num">1</span>Introduction</h2>
+                    <p>
+                        Hema Flow ("we", "us", "our") is a haematology diagnostic management platform operated for the Nelson Mandela Bay Health District (NMBHDL). This
+                        policy explains what personal and medical information we collect from patients, doctors, laboratory staff and administrators, why we collect it,
+                        and how it is protected under the Protection of Personal Information Act, 2013 (POPIA).
+                    </p>
+                    
+                </div>
+
+                <div class="privacy-section" id="information-we-collect">
+                    <h2><span class="num">2</span>Information We Collect</h2>
+                    <p>Depending on your role, we may collect:</p>
+                    <ul>
+                        <li><strong>Identity information:</strong> full name, South African ID number, date of birth, contact details and physical address.</li>
+                        <li><strong>Account information:</strong> email address, hashed password, and login activity.</li>
+                        <li><strong>Medical information:</strong> test requests, sample records, results, medical conditions, allergies, and medications.</li>
+                        <li><strong>Consent records:</strong> which doctors you have granted access to your records, and when.</li>
+                        <li><strong>Usage information:</strong> activity logs kept for audit and security purposes.</li>
+                    </ul>
+                </div>
+
+                <div class="privacy-section" id="how-we-use-it">
+                    <h2><span class="num">3</span>How We Use It</h2>
+                    <ul>
+                        <li>To create and manage your Hema Flow account.</li>
+                        <li>To process laboratory test requests and deliver results to the correct patient and treating doctor.</li>
+                        <li>To maintain an accurate, unified medical record across the diagnostic workflow.</li>
+                        <li>To keep an audit trail of actions taken on your record, for accountability and security.</li>
+                        <li>To communicate service updates, such as password resets or result availability.</li>
+                    </ul>
+                </div>
+
+                <div class="privacy-section" id="legal-basis">
+                    <h2><span class="num">4</span>Legal Basis for Processing</h2>
+                    <p class="mb-0">
+                        We process personal information where it is necessary to provide a healthcare service, to comply with a legal obligation, in the legitimate
+                        interests of the diagnostic laboratory network, or with your consent (for example, when you grant a doctor access to your medical profile
+                        via Consent Management).
+                    </p>
+                </div>
+
+                <div class="privacy-section" id="sharing">
+                    <h2><span class="num">5</span>Sharing of Information</h2>
+                    <p>Your information is only shared with:</p>
+                    <ul class="mb-0">
+                        <li>Doctors you have explicitly granted access to via the Consent Management feature.</li>
+                        <li>Laboratory technicians and managers directly involved in processing your test requests.</li>
+                        <li>Regulatory or governmental bodies where required by law.</li>
+                    </ul>
+                </div>
+
+                <div class="privacy-section" id="security">
+                    <h2><span class="num">6</span>Data Security</h2>
+                    <p class="mb-0">
+                        Passwords are stored using industry-standard hashing, all portal sessions are authenticated, and access to records is restricted by role.
+                        Data is stored on infrastructure secured against unauthorised access, and administrative actions are logged for audit purposes.
+                    </p>
+                </div>
+
+                <div class="privacy-section" id="retention">
+                    <h2><span class="num">7</span>Data Retention</h2>
+                    <p class="mb-0">
+                        Medical records are retained for as long as your account remains active and thereafter for the minimum period required by applicable
+                        healthcare record-keeping regulations. You may request more detail on retention periods by contacting us (see Section 12).
+                    </p>
+                </div>
+
+                <div class="privacy-section" id="your-rights">
+                    <h2><span class="num">8</span>Your Rights Under POPIA</h2>
+                    <p class="mb-0">As a data subject, you have the right to:</p>
+                    <div class="rights-grid">
+                        <div class="rights-item">
+                            <div class="fw-600"><i class="bi bi-eye me-1 text-primary"></i>Access</div>
+                            <p>Request confirmation of what personal information we hold about you.</p>
+                        </div>
+                        <div class="rights-item">
+                            <div class="fw-600"><i class="bi bi-pencil-square me-1 text-primary"></i>Correction</div>
+                            <p>Request correction of inaccurate or outdated information.</p>
+                        </div>
+                        <div class="rights-item">
+                            <div class="fw-600"><i class="bi bi-trash me-1 text-primary"></i>Deletion</div>
+                            <p>Request deletion of information no longer required, subject to legal record-keeping duties.</p>
+                        </div>
+                        <div class="rights-item">
+                            <div class="fw-600"><i class="bi bi-hand-index me-1 text-primary"></i>Objection</div>
+                            <p>Object to processing of your information for specific purposes.</p>
+                        </div>
+                        <div class="rights-item">
+                            <div class="fw-600"><i class="bi bi-file-earmark-text me-1 text-primary"></i>Complaint</div>
+                            <p>Lodge a complaint with the Information Regulator of South Africa.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="privacy-section" id="cookies">
+                    <h2><span class="num">9</span>Cookies</h2>
+                    <p class="mb-0">
+                        Hema Flow uses a minimal, essential authentication cookie required to keep you securely signed in to the portal. We do not use
+                        third-party advertising or tracking cookies.
+                    </p>
+                </div>
+
+                <div class="privacy-section" id="children">
+                    <h2><span class="num">10</span>Children's Information</h2>
+                    <p class="mb-0">
+                        Where a patient is a minor, their medical records are managed in accordance with applicable healthcare consent laws, typically via a
+                        parent, guardian or the treating doctor.
+                    </p>
+                </div>
+
+                <div class="privacy-section" id="changes">
+                    <h2><span class="num">11</span>Changes to This Policy</h2>
+                    <p class="mb-0">
+                        We may update this policy from time to time. Material changes will be communicated through the portal. The "Last updated" date at the
+                        top of this page reflects the most recent revision.
+                    </p>
+                </div>
+
+                <div class="privacy-section mb-0" id="contact">
+                    <h2><span class="num">12</span>Contact Us</h2>
+                    <p class="mb-2">For questions about this policy or to exercise your rights under POPIA, contact:</p>
+                    <p class="mb-1"><i class="bi bi-envelope-at-fill me-2 text-primary"></i>support@hemaflow.co.za</p>
+                    <p class="mb-1"><i class="bi bi-telephone-fill me-2 text-primary"></i>+27 (0) 41 504 1111</p>
+                    <p class="mb-0"><i class="bi bi-geo-alt-fill me-2 text-primary"></i>123 Medical Drive, Gqeberha, Eastern Cape, South Africa</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

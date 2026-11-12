@@ -1,0 +1,43 @@
+@model Project.Models.VerifyTwoFactorViewModel
+@{
+    ViewData["Title"] = "Verify Your Identity";
+    Layout = "_Layout";
+}
+
+<div class="container" style="padding-top:90px; padding-bottom:40px;">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-xl-5">
+            <div class="auth-card" style="border:1px solid #e1e1e1; background:#fff;">
+                <div class="p-4">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-shield-lock text-dark" style="font-size:2.2rem;"></i>
+                        <h5 class="fw-bold mt-3 mb-1">Two-Factor Verification</h5>
+                        <p class="text-muted small mb-0">Enter the 6-digit code from your authenticator app, or one of your backup codes.</p>
+                    </div>
+
+                    @if (TempData["Error"] != null)
+                    {
+                        <div data-toast="danger" class="alert alert-danger rounded-0 border-0 border-start border-3 border-danger small mb-3" role="alert">
+                            <i class="bi bi-exclamation-circle me-2"></i>@TempData["Error"]
+                        </div>
+                    }
+
+                    <form asp-controller="Account" asp-action="VerifyTwoFactor" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-4">
+                            <label class="form-label small fw-semibold">Authenticator Code or Backup Code</label>
+                            <input type="text" name="Code" class="form-control text-center" style="letter-spacing:0.15em;"
+                                   placeholder="123456" autocomplete="one-time-code" autofocus required maxlength="20">
+                        </div>
+                        <button type="submit" class="btn btn-dark w-100 fw-semibold py-2">Verify &amp; Sign In</button>
+                    </form>
+
+                    <hr class="my-4">
+                    <p class="small text-muted text-center mb-0">
+                        <a asp-controller="Account" asp-action="Login" class="text-dark text-decoration-none">Cancel and return to login</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,108 @@
+﻿@model IEnumerable<Project.Models.LabManager.ActivityLog>
+@{
+    ViewData["Title"] = "Activity Log";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">Activity Log</h2>
+        <small class="text-muted">@ViewBag.TotalEntries total entries</small>
+    </div>
+    <a asp-controller="Dashboard" asp-action="Index" class="btn btn-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-semibold small">Action</label>
+                <select name="actionFilter" class="form-select form-select-sm" onchange="this.form.submit()">
+                    @foreach (var a in new[] { "All", "Created", "Updated", "Archived", "Restored", "StockAdjusted", "OrderPlaced", "OrderCompleted", "OrderCancelled", "ItemReceived", "ItemCancelled" })
+                    {
+                        <option value="@a" selected="@(ViewBag.ActionFilter == a ? "selected" : null)">@a</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold small">Entity Type</label>
+                <select name="entityFilter" class="form-select form-select-sm" onchange="this.form.submit()">
+                    @foreach (var e in new[] { "All", "TestCategory", "TestType", "Consumable", "Supplier", "Order", "Doctor", "Technician", "Profile" })
+                    {
+                        <option value="@e" selected="@(ViewBag.EntityFilter == e ? "selected" : null)">@e</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold small">From</label>
+                <input type="date" name="dateFrom" value="@ViewBag.DateFrom" class="form-control form-control-sm" onchange="this.form.submit()" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold small">To</label>
+                <input type="date" name="dateTo" value="@ViewBag.DateTo" class="form-control form-control-sm" onchange="this.form.submit()" />
+            </div>
+            <div class="col-md-2">
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm w-100">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results -->
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th class="ps-4">Timestamp</th>
+                    <th>Action</th>
+                    <th>Type</th>
+                    <th>Record</th>
+                    <th>Performed By</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var entry in Model)
+                    {
+                        string badgeColor = entry.Action switch
+                        {
+                            "Created" => "success",
+                            "Updated" => "warning",
+                            "Archived" => "danger",
+                            "Restored" => "info",
+                            "StockAdjusted" => "primary",
+                            "OrderPlaced" => "secondary",
+                            "OrderCompleted" => "success",
+                            "OrderCancelled" => "danger",
+                            "ItemReceived" => "success",
+                            "ItemCancelled" => "danger",
+                            _ => "secondary"
+                        };
+
+                        <tr>
+                            <td class="ps-4 text-muted small">@entry.Timestamp.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td><span class="badge bg-@badgeColor">@entry.Action</span></td>
+                            <td><span class="badge bg-light text-dark border">@entry.EntityType</span></td>
+                            <td><strong>@entry.EntityName</strong></td>
+                            <td>@entry.PerformedBy</td>
+                            <td class="text-muted small">@(string.IsNullOrEmpty(entry.Notes) ? "-" : entry.Notes)</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox fs-4 d-block mb-2"></i>No activity found for the selected filters.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

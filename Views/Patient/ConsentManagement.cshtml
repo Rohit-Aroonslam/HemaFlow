@@ -1,0 +1,613 @@
+﻿@model Project.Models.ConsentViewModel
+@{
+    Layout = "_PatientLayout";
+    ViewData["Title"] = "Doctor Access | Hema Flow";
+}
+
+<div class="row align-items-center mb-4">
+    <div class="col-12">
+        <h4 class="fw-700 mb-1" style="color: #0f172a;">Doctor Access Management</h4>
+        <p class="small text-muted mb-0">Control which doctors can view your test results. You can grant or revoke access at any time.</p>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div data-toast="success" class="alert alert-success rounded-0 border-0 border-start border-3 border-success small mb-4">
+        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div data-toast="danger" class="alert alert-danger rounded-0 border-0 border-start border-3 border-danger small mb-4">
+        <i class="bi bi-exclamation-circle me-2"></i>@TempData["Error"]
+    </div>
+}
+
+@if (Model.PrimaryDoctors.Any())
+{
+    <div class="card p-3 mb-4 border-start border-3 border-primary" style="background:#f8faff;">
+        <div class="d-flex align-items-start gap-3">
+            <i class="bi bi-shield-fill-check text-primary fs-4"></i>
+            <div>
+                @foreach (var pd in Model.PrimaryDoctors)
+                {
+                    var initials = string.Concat(pd.Name.Replace("Dr.", "").Replace("Dr ", "").Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => char.ToUpper(w[0])));
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <div class="d-flex align-items-center justify-content-center fw-700 text-white flex-shrink-0" style="width:38px; height:38px; background:#0f172a; font-size:0.8rem;">@initials</div>
+                        <div>
+                            <div class="fw-700 text-dark small" style="line-height:1.2;">@pd.Name <span class="badge ms-1" style="background:#dbeafe; color:#1e40af; font-weight:600;">Primary Doctor</span></div>
+                            <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+                                @if (!string.IsNullOrWhiteSpace(pd.Specialty)) { <span class="text-muted x-small">@pd.Specialty</span> }
+                                @if (!string.IsNullOrWhiteSpace(pd.Practice)) { <span class="text-muted x-small"><i class="bi bi-building me-1"></i>@pd.Practice</span> }
+                                <span class="text-muted x-small">HPCSA <span class="font-monospace text-dark">@pd.HpcsaNumber</span></span>
+                            </div>
+                        </div>
+                    </div>
+                }
+                <small class="text-primary" style="font-size: 0.7rem;">
+                    Your primary doctors have <strong>full access</strong> to all your test results automatically.
+                    To add or remove one, go to <a asp-controller="Patient" asp-action="MedicalProfile" class="text-primary fw-600">Medical Profile</a>.
+                </small>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="row g-4">
+
+    @* ── Doctors with Access ── *@
+    <div class="col-lg-7">
+        <div class="card mb-0">
+            <div class="card-header justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-check text-primary"></i>
+                    <span>Doctors with Access</span>
+                </div>
+                <span class="text-muted x-small">@Model.AuthorizedDoctors.Count additional doctor(s)</span>
+            </div>
+            <div class="p-3">
+                @if (!Model.AuthorizedDoctors.Any())
+                {
+                    <div class="text-center py-4">
+                        <i class="bi bi-shield-x text-muted fs-2 mb-2 d-block opacity-30"></i>
+                        <p class="text-muted small mb-0">No additional doctors have been granted access.</p>
+                    </div>
+                }
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var doc in Model.AuthorizedDoctors)
+                    {
+                        var grantedTests = doc.IsFullAccess
+                            ? Model.AllTestRequests
+                            : Model.AllTestRequests.Where(r => doc.GrantedRequestIds.Contains(r.RequestId)).ToList();
+
+                        <div class="border bg-light p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="flex-grow-1" style="cursor:pointer;" onclick="openDoctorDetail('@doc.HpcsaNumber')">
+                                    <div class="fw-600 text-dark small">@doc.DoctorName <i class="bi bi-chevron-right text-muted x-small"></i></div>
+                                    <div class="text-muted x-small">@string.Join(" | ", new[] { doc.Specialty, doc.Practice }.Where(x => !string.IsNullOrWhiteSpace(x)))</div>
+                                    <div class="text-muted x-small">HPCSA: <span class="font-monospace">@doc.HpcsaNumber</span></div>
+                                </div>
+                                <div class="text-end flex-shrink-0">
+                                    <div class="text-muted x-small mb-1">Granted @doc.GrantedDate.ToString("d MMM yyyy")</div>
+                                    <button type="button" class="btn btn-outline-secondary py-1 px-2"
+                                            style="font-size:0.7rem !important; color:#dc2626 !important;"
+                                            onclick="openRevokeModal('@doc.HpcsaNumber')">
+                                        <i class="bi bi-shield-x me-1"></i>Revoke
+                                    </button>
+                                </div>
+                            </div>
+                            @* Show which tests this doctor actually has access to *@
+                            <div class="pt-2 mt-2 border-top" style="border-color:#e2e8f0 !important;">
+                                <div class="text-uppercase text-muted fw-600 mb-1" style="font-size:0.62rem; letter-spacing:0.05em;">
+                                    <i class="bi bi-eye me-1 text-success"></i>Has access to:
+                                </div>
+                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                    @if (doc.IsFullAccess)
+                                    {
+                                        <span class="badge bg-primary text-white px-2 py-1" style="font-size:0.65rem;">
+                                            <i class="bi bi-infinity me-1"></i>Full Access - All Results
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var req in grantedTests.Take(3))
+                                        {
+                                            <span class="badge border border-primary text-primary bg-white px-2 py-1" style="font-size:0.62rem;">
+                                                @req.TestName
+                                            </span>
+                                        }
+                                        @if (grantedTests.Count > 3)
+                                        {
+                                            <span class="badge border border-secondary text-secondary bg-white px-2 py-1" style="font-size:0.62rem;">
+                                                +@(grantedTests.Count - 3) more
+                                            </span>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Grant Access ── *@
+    <div class="col-lg-5">
+        <div class="card mb-0">
+            <div class="card-header">
+                <i class="bi bi-person-plus-fill text-primary me-2"></i>Grant Access to a Doctor
+            </div>
+            <div class="p-3">
+                <form asp-action="GrantConsent" asp-controller="Patient" method="post" id="grantForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="hpcsaNumber" id="hpcsaHidden" />
+                    <input type="hidden" name="accessType" id="accessTypeHidden" value="full" />
+
+                    @* Doctor Search *@
+                    <div class="mb-3 position-relative">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Search Doctor by Name or HPCSA</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0 rounded-0 text-muted"><i class="bi bi-search"></i></span>
+                            <input type="text" id="doctorSearchInput" autocomplete="off"
+                                   class="form-control bg-light border-0 rounded-0 shadow-none small py-2"
+                                   placeholder="Type doctor name or HPCSA number...">
+                        </div>
+                        <div id="searchDropdown"
+                             class="position-absolute w-100 bg-white border shadow-sm"
+                             style="z-index:1050; top:100%; left:0; display:none; max-height:220px; overflow-y:auto;">
+                        </div>
+                    </div>
+
+                    @* Selected doctor preview *@
+                    <div id="selectedDoctorPreview" class="p-2 mb-3 border-start border-3 border-primary bg-light" style="display:none;">
+                        <div class="fw-600 text-dark small" id="previewName"></div>
+                        <div class="text-muted x-small" id="previewDetails"></div>
+                        <small class="text-primary" style="font-size:0.68rem;">
+                            <i class="bi bi-shield-check me-1"></i>This doctor will view your selected results.
+                        </small>
+                    </div>
+
+                    @* Access type toggle *@
+                    <div class="mb-3" id="accessTypeSection" style="display:none;">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-2">Access Type</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" id="btnFullAccess"
+                                    class="btn btn-outline-secondary flex-fill py-2 access-type-btn active-access"
+                                    onclick="setAccessType('full')"
+                                    style="font-size:0.78rem;">
+                                <i class="bi bi-infinity me-1"></i>Full Access
+                            </button>
+                            <button type="button" id="btnSpecific"
+                                    class="btn btn-outline-secondary flex-fill py-2 access-type-btn"
+                                    onclick="setAccessType('specific')"
+                                    style="font-size:0.78rem;">
+                                <i class="bi bi-list-check me-1"></i>Specific Tests
+                            </button>
+                        </div>
+                    </div>
+
+                    @* Test request checkboxes - shown only when "Specific" is selected *@
+                    <div class="mb-3" id="testCheckboxSection" style="display:none;">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-2">
+                            Select Test Requests to Share
+                        </label>
+                        @if (!Model.AllTestRequests.Any())
+                        {
+                            <p class="text-muted small">No test requests available.</p>
+                        }
+                        else
+                        {
+                            <div class="d-flex flex-column gap-2" style="max-height:240px; overflow-y:auto;">
+                                @foreach (var req in Model.AllTestRequests)
+                                {
+                                    var statusColor = req.Status switch
+                                    {
+                                        "Released by Doctor" => "success",
+                                        "Completed" => "success",
+                                        "In Progress" => "warning",
+                                        _ => "secondary"
+                                    };
+                                    <label class="d-flex align-items-start gap-3 p-3 border bg-white cursor-pointer"
+                                           for="req_@req.RequestId"
+                                           style="cursor:pointer; transition:background 0.15s;">
+                                        <input class="form-check-input mt-1 flex-shrink-0"
+                                               type="checkbox" name="requestIds" value="@req.RequestId"
+                                               id="req_@req.RequestId">
+                                        <div class="flex-grow-1">
+                                            <div class="fw-600 text-dark" style="font-size:0.82rem;">@req.TestName</div>
+                                            <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+                                                <span class="text-muted" style="font-size:0.7rem;">@req.RequestDate.ToString("d MMM yyyy")</span>
+                                                <span class="badge border border-@statusColor text-@statusColor bg-white px-2" style="font-size:0.62rem;">@req.Status</span>
+                                                @if (req.ResultFlag == "Normal")
+                                                {
+                                                    <span class="badge bg-success text-white px-2" style="font-size:0.62rem;"><i class="bi bi-check-circle me-1"></i>Normal</span>
+                                                }
+                                                else if (req.ResultFlag == "Abnormal")
+                                                {
+                                                    <span class="badge bg-danger text-white px-2" style="font-size:0.62rem;"><i class="bi bi-exclamation-triangle me-1"></i>Abnormal</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </label>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <button type="submit" class="btn btn-dark w-100 py-2" id="grantBtn" disabled>
+                        <i class="bi bi-shield-plus me-2"></i>Grant Access
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Doctor Detail Modal (item #15) *@
+<div class="modal fade" id="doctorDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 bg-white" style="border-radius:0;">
+            <div class="modal-header border-bottom px-4 py-3 justify-content-between">
+                <h6 class="fw-700 text-dark mb-0"><i class="bi bi-person-badge text-primary me-2"></i>Doctor Access Detail</h6>
+                <button type="button" class="btn-close shadow-none small" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <div class="fw-700 text-dark" id="detailDoctorName"></div>
+                        <div class="text-muted small" id="detailDoctorMeta"></div>
+                    </div>
+                    <div class="d-flex gap-2 flex-shrink-0">
+                        <button type="button" id="detailAddAccessBtn" class="btn btn-outline-primary py-1 px-3" style="font-size:0.75rem;" onclick="openAddAccessFromDetail()">
+                            <i class="bi bi-plus-lg me-1"></i>Add Access
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary py-1 px-3" style="font-size:0.75rem; color:#dc2626 !important;" onclick="openRevokeFromDetail()">
+                            <i class="bi bi-shield-x me-1"></i>Revoke Access
+                        </button>
+                    </div>
+                </div>
+                <div class="text-uppercase text-muted fw-600 mb-2" style="font-size:0.62rem; letter-spacing:0.05em;">
+                    Tests This Doctor Can See
+                </div>
+                <div id="detailTestsBody" style="max-height:280px; overflow-y:auto;"></div>
+            </div>
+            <div class="modal-footer border-top px-4 py-3">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Add Access Modal *@
+<div class="modal fade" id="addAccessModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 bg-white" style="border-radius:0;">
+            <div class="modal-header border-bottom px-4 py-3 justify-content-between">
+                <h6 class="fw-700 text-dark mb-0"><i class="bi bi-plus-circle text-primary me-2"></i>Add Access</h6>
+                <button type="button" class="btn-close shadow-none small" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="small text-muted">Grant <strong id="addAccessDoctorName" class="text-dark"></strong> access to more of your test results.</p>
+                <form id="addAccessForm" asp-action="AddConsentAccess" asp-controller="Patient" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="hpcsaNumber" id="addAccessHpcsa" />
+                    <div id="addAccessTestsList" class="mb-2" style="max-height:320px; overflow-y:auto;"></div>
+                    <div id="addAccessEmptyState" class="text-muted small py-3 text-center" style="display:none;">
+                        This doctor already has access to all your released results.
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end pt-3 mt-2 border-top">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" id="addAccessSubmitBtn" class="btn btn-dark">Grant Access</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Revoke Modal (item #16) *@
+<div class="modal fade" id="revokeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 bg-white" style="border-radius:0;">
+            <div class="modal-header border-bottom px-4 py-3 justify-content-between">
+                <h6 class="fw-700 text-dark mb-0"><i class="bi bi-shield-x text-danger me-2"></i>Revoke Access</h6>
+                <button type="button" class="btn-close shadow-none small" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="small text-muted">Revoking access for <strong id="revokeDoctorName" class="text-dark"></strong>.</p>
+                <form id="revokeForm" asp-action="RevokeConsent" asp-controller="Patient" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="hpcsaNumber" id="revokeHpcsa" />
+                    <input type="hidden" name="revokeAll" id="revokeAllHidden" value="false" />
+
+                    <div id="revokeTestsList" class="mb-3" style="max-height:220px; overflow-y:auto;"></div>
+
+                    <div class="form-check p-2 bg-light border-start border-3 border-danger">
+                        <input class="form-check-input" type="checkbox" id="revokeAllCheckbox" onchange="toggleRevokeAll()">
+                        <label class="form-check-label small fw-600 text-danger" for="revokeAllCheckbox">
+                            Revoke all access for this doctor
+                        </label>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end pt-3 mt-2 border-top">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Revoke</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .active-access {
+        background: #0f172a !important;
+        color: #fff !important;
+        border-color: #0f172a !important;
+    }
+</style>
+
+<script>
+    // Safe, quote-free data source for the doctor detail/revoke modals - built
+    // inside a <script> block (not an HTML attribute), so it can't get cut off
+    // by quote conflicts the way inline onclick JSON did.
+    var consentData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AuthorizedDoctors.Select(doc => new {
+        hpcsa = doc.HpcsaNumber,
+        name = doc.DoctorName,
+        practice = doc.Practice,
+        specialty = doc.Specialty,
+        isFullAccess = doc.IsFullAccess,
+        tests = (doc.IsFullAccess ? Model.AllTestRequests : Model.AllTestRequests.Where(r => doc.GrantedRequestIds.Contains(r.RequestId)))
+                    .Select(r => new { r.RequestId, r.TestName, date = r.RequestDate.ToString("d MMM yyyy"), r.ResultFlag })
+    })));
+
+    var allReleasedTests = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.AllTestRequests.Select(r => new {
+        r.RequestId, r.TestName, date = r.RequestDate.ToString("d MMM yyyy"), r.ResultFlag
+    })));
+
+    (function () {
+        var searchInput  = document.getElementById('doctorSearchInput');
+        var dropdown     = document.getElementById('searchDropdown');
+        var hpcsaHidden  = document.getElementById('hpcsaHidden');
+        var preview      = document.getElementById('selectedDoctorPreview');
+        var previewName  = document.getElementById('previewName');
+        var previewDet   = document.getElementById('previewDetails');
+        var grantBtn     = document.getElementById('grantBtn');
+        var accessSec    = document.getElementById('accessTypeSection');
+        var checkSec     = document.getElementById('testCheckboxSection');
+
+        var timer = null;
+        function esc(t) { var d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
+
+        // Draws the dropdown for whatever the server returned.
+        function showMatches(matches) {
+            dropdown.innerHTML = '';
+            if (!matches.length) {
+                dropdown.innerHTML = '<div class="px-3 py-2 text-muted small">No doctors found.</div>';
+                dropdown.style.display = 'block';
+                return;
+            }
+            matches.forEach(function (doc) {
+                var item = document.createElement('div');
+                item.className = 'px-3 py-2 border-bottom';
+                item.style.cursor = 'pointer';
+                item.innerHTML =
+                    '<div class="fw-600 text-dark" style="font-size:0.82rem;">' + esc(doc.name) + '</div>' +
+                    '<div class="text-muted" style="font-size:0.7rem;">' + esc(doc.specialty || 'General') + '</div>' +
+                    '<div class="text-primary font-monospace" style="font-size:0.68rem;">HPCSA: ' + esc(doc.hpcsaNumber) + '</div>';
+                item.addEventListener('mouseenter', function () { this.style.background = '#f8fafc'; });
+                item.addEventListener('mouseleave', function () { this.style.background = ''; });
+                item.addEventListener('click', function () {
+                    searchInput.value        = doc.name;
+                    hpcsaHidden.value        = doc.hpcsaNumber;
+                    previewName.textContent  = doc.name;
+                    previewDet.textContent   = (doc.specialty || 'General') + '  (HPCSA: ' + doc.hpcsaNumber + ')';
+                    preview.style.display    = 'block';
+                    dropdown.style.display   = 'none';
+                    accessSec.style.display  = 'block';
+                    grantBtn.disabled        = false;
+                    setAccessType('full');
+                });
+                dropdown.appendChild(item);
+            });
+            dropdown.style.display = 'block';
+        }
+
+        // Loads doctors from the server as the patient types (or on focus, to browse).
+        function loadDoctors() {
+            fetch('@Url.Action("SearchDoctors", "Patient")?q=' + encodeURIComponent(searchInput.value.trim()), { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(showMatches)
+                .catch(function () {
+                    dropdown.innerHTML = '<div class="px-3 py-2 text-danger small">Could not load doctors.</div>';
+                    dropdown.style.display = 'block';
+                });
+        }
+
+        searchInput.addEventListener('input', function () {
+            hpcsaHidden.value  = '';
+            preview.style.display   = 'none';
+            accessSec.style.display = 'none';
+            checkSec.style.display  = 'none';
+            grantBtn.disabled = true;
+            clearTimeout(timer);
+            timer = setTimeout(loadDoctors, 200);
+        });
+        searchInput.addEventListener('focus', loadDoctors);
+
+        document.addEventListener('click', function (e) {
+            if (!searchInput.contains(e.target) && !dropdown.contains(e.target))
+                dropdown.style.display = 'none';
+        });
+
+        document.getElementById('grantForm').addEventListener('submit', function (e) {
+            if (!hpcsaHidden.value) {
+                e.preventDefault();
+                HemaUI.toast({ message: 'Please select a doctor first.', type: 'warning' });
+                return;
+            }
+            var accessType = document.getElementById('accessTypeHidden').value;
+            if (accessType === 'specific') {
+                var anyChecked = document.querySelectorAll('[name="requestIds"]:checked').length > 0;
+                if (!anyChecked) {
+                    e.preventDefault();
+                    HemaUI.toast({ message: 'Please select at least one test to share, or choose Full Access.', type: 'warning' });
+                }
+            }
+        });
+    })();
+
+    function setAccessType(type) {
+        var checkSec  = document.getElementById('testCheckboxSection');
+        var btnFull   = document.getElementById('btnFullAccess');
+        var btnSpec   = document.getElementById('btnSpecific');
+        document.getElementById('accessTypeHidden').value = type;
+        if (type === 'full') {
+            checkSec.style.display = 'none';
+            btnFull.classList.add('active-access');
+            btnSpec.classList.remove('active-access');
+            // Uncheck all
+            document.querySelectorAll('[name="requestIds"]').forEach(function(cb){ cb.checked=false; });
+        } else {
+            checkSec.style.display = 'block';
+            btnSpec.classList.add('active-access');
+            btnFull.classList.remove('active-access');
+        }
+    }
+
+    // ── Doctor Detail Modal (item #15) ──────────────────────────────────
+    var currentDetailHpcsa = null;
+
+    function openDoctorDetail(hpcsa) {
+        var doc = consentData.find(function (d) { return d.hpcsa === hpcsa; });
+        if (!doc) return;
+        currentDetailHpcsa = hpcsa;
+
+        document.getElementById('detailDoctorName').textContent = doc.name;
+        document.getElementById('detailDoctorMeta').textContent = doc.specialty + ' - ' + doc.practice + ' (HPCSA: ' + doc.hpcsa + ')';
+        document.getElementById('detailAddAccessBtn').style.display = doc.isFullAccess ? 'none' : 'inline-block';
+        var body = document.getElementById('detailTestsBody');
+        body.innerHTML = '';
+
+        if (doc.isFullAccess) {
+            body.innerHTML = '<div class="p-3 bg-light border-start border-3 border-primary small">' +
+                '<i class="bi bi-infinity me-2 text-primary"></i>This doctor has <strong>full access</strong> to all your test results, including any future ones.</div>';
+        } else if (!doc.tests.length) {
+            body.innerHTML = '<p class="text-muted small mb-0">No specific tests currently shared.</p>';
+        } else {
+            doc.tests.forEach(function (t) {
+                var flagBadge = '';
+                if (t.ResultFlag === 'Normal') flagBadge = '<span class="badge bg-success text-white px-2 ms-2" style="font-size:0.62rem;"><i class="bi bi-check-circle me-1"></i>Normal</span>';
+                else if (t.ResultFlag === 'Abnormal') flagBadge = '<span class="badge bg-danger text-white px-2 ms-2" style="font-size:0.62rem;"><i class="bi bi-exclamation-triangle me-1"></i>Abnormal</span>';
+                var row = document.createElement('div');
+                row.className = 'd-flex justify-content-between align-items-center p-2 border-bottom';
+                row.innerHTML = '<div><div class="fw-600 text-dark small">' + t.TestName + '</div>' +
+                    '<div class="text-muted x-small">' + t.date + '</div></div>' +
+                    '<div>' + flagBadge + '</div>';
+                body.appendChild(row);
+            });
+        }
+
+        new bootstrap.Modal(document.getElementById('doctorDetailModal')).show();
+    }
+
+    function openAddAccessFromDetail() {
+        bootstrap.Modal.getInstance(document.getElementById('doctorDetailModal'))?.hide();
+        setTimeout(function () { openAddAccessModal(currentDetailHpcsa); }, 200);
+    }
+
+    function openRevokeFromDetail() {
+        bootstrap.Modal.getInstance(document.getElementById('doctorDetailModal'))?.hide();
+        setTimeout(function () { openRevokeModal(currentDetailHpcsa); }, 200);
+    }
+
+    function openAddAccessModal(hpcsa) {
+        var doc = consentData.find(function (d) { return d.hpcsa === hpcsa; });
+        if (!doc) return;
+
+        document.getElementById('addAccessHpcsa').value = doc.hpcsa;
+        document.getElementById('addAccessDoctorName').textContent = doc.name;
+
+        var grantedIds = doc.tests.map(function (t) { return t.RequestId; });
+        var available = allReleasedTests.filter(function (t) { return grantedIds.indexOf(t.RequestId) === -1; });
+
+        var list = document.getElementById('addAccessTestsList');
+        var emptyState = document.getElementById('addAccessEmptyState');
+        var submitBtn = document.getElementById('addAccessSubmitBtn');
+        list.innerHTML = '';
+
+        if (!available.length) {
+            emptyState.style.display = 'block';
+            submitBtn.disabled = true;
+        } else {
+            emptyState.style.display = 'none';
+            submitBtn.disabled = false;
+            available.forEach(function (t) {
+                var flagBadge = '';
+                if (t.ResultFlag === 'Normal') flagBadge = '<span class="badge bg-success text-white px-2 ms-2" style="font-size:0.62rem;"><i class="bi bi-check-circle me-1"></i>Normal</span>';
+                else if (t.ResultFlag === 'Abnormal') flagBadge = '<span class="badge bg-danger text-white px-2 ms-2" style="font-size:0.62rem;"><i class="bi bi-exclamation-triangle me-1"></i>Abnormal</span>';
+                var row = document.createElement('label');
+                row.className = 'd-flex align-items-center justify-content-between gap-2 p-2 border-bottom';
+                row.style.cursor = 'pointer';
+                row.innerHTML = '<span class="d-flex align-items-center gap-2">' +
+                    '<input type="checkbox" class="form-check-input" name="requestIds" value="' + t.RequestId + '">' +
+                    '<span class="small text-dark">' + t.TestName + ' <span class="text-muted">(' + t.date + ')</span></span>' +
+                    '</span>' + flagBadge;
+                list.appendChild(row);
+            });
+        }
+
+        new bootstrap.Modal(document.getElementById('addAccessModal')).show();
+    }
+
+    // ── Revoke Modal (item #16) ──────────────────────────────────────────
+    function openRevokeModal(hpcsa) {
+        var doc = consentData.find(function (d) { return d.hpcsa === hpcsa; });
+        if (!doc) return;
+
+        document.getElementById('revokeHpcsa').value = doc.hpcsa;
+        document.getElementById('revokeDoctorName').textContent = doc.name;
+        var list = document.getElementById('revokeTestsList');
+        list.innerHTML = '';
+
+        if (doc.isFullAccess) {
+            list.innerHTML = '<p class="small text-muted">This doctor has full access to all results. You can only revoke all access at once.</p>';
+        } else if (doc.tests.length) {
+            doc.tests.forEach(function (t) {
+                var row = document.createElement('label');
+                row.className = 'd-flex align-items-center gap-2 p-2 border-bottom';
+                row.style.cursor = 'pointer';
+                row.innerHTML = '<input type="checkbox" class="form-check-input revoke-test-cb" name="requestIds" value="' + t.RequestId + '">' +
+                    '<span class="small text-dark">' + t.TestName + ' <span class="text-muted">(' + t.date + ')</span></span>';
+                list.appendChild(row);
+            });
+        }
+
+        document.getElementById('revokeAllCheckbox').checked = doc.isFullAccess;
+        document.getElementById('revokeAllCheckbox').disabled = doc.isFullAccess; // full access can only be all-or-nothing
+        toggleRevokeAll();
+
+        new bootstrap.Modal(document.getElementById('revokeModal')).show();
+    }
+
+    function toggleRevokeAll() {
+        var allChecked = document.getElementById('revokeAllCheckbox').checked;
+        document.getElementById('revokeAllHidden').value = allChecked ? 'true' : 'false';
+        document.querySelectorAll('.revoke-test-cb').forEach(function (cb) {
+            cb.checked = allChecked;
+            cb.disabled = allChecked;
+        });
+    }
+
+    document.getElementById('revokeForm').addEventListener('submit', function (e) {
+        var allChecked = document.getElementById('revokeAllCheckbox').checked;
+        var anyTestChecked = document.querySelectorAll('.revoke-test-cb:checked').length > 0;
+        if (!allChecked && !anyTestChecked) {
+            e.preventDefault();
+            HemaUI.toast({ message: 'Select at least one test to revoke, or check "Revoke all access".', type: 'warning' });
+        }
+    });
+</script>
+

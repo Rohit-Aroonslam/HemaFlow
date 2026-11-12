@@ -1,0 +1,385 @@
+﻿@model Project.Models.AdminDashboardViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
+    <div>
+        <p class="text-muted small text-uppercase fw-bold mb-1" style="letter-spacing:2px;" id="greetingLabel">Welcome back</p>
+        <h2 class="serif-brand mb-0">@Model.FirstName @Model.Surname</h2>
+        <div class="dash-chrome-strip">
+            <span class="dash-chrome-item"><i class="bi bi-clock-fill"></i><span id="liveClock">--:--:--</span></span>
+            <span class="dash-chrome-sep">&middot;</span>
+            <span class="dash-chrome-item"><i class="bi bi-cloud-sun-fill"></i><span id="weatherText">Loading weather&hellip;</span></span>
+        </div>
+    </div>
+</div>
+
+@if (Model.PendingApprovalsCount > 0)
+{
+    <a asp-controller="Admin" asp-action="PendingApprovals" class="text-decoration-none">
+        <div class="card mb-4" style="border-left: 3px solid #d97706 !important;">
+            <div class="p-3 d-flex align-items-center gap-3">
+                <div class="p-2 bg-light border text-warning" style="font-size: 1.2rem; line-height: 1;">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="fw-700 text-dark" style="font-size: 0.9rem;">@Model.PendingApprovalsCount item(s) awaiting your review</div>
+                    <div class="text-muted small">Patients have submitted "Other" allergies, conditions, or medications for approval.</div>
+                </div>
+                <i class="bi bi-chevron-right text-muted"></i>
+            </div>
+        </div>
+    </a>
+}
+
+@* ── Stats Row ── *@
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-2">
+        <a asp-controller="Admin" asp-action="UserManagement" class="text-decoration-none d-block card p-3 mb-0 h-100">
+            <small class="text-uppercase text-muted fw-600 d-block mb-1" style="font-size:0.62rem; letter-spacing:0.05em;">Total Users</small>
+            <div class="d-flex align-items-baseline gap-1">
+                <span class="fs-4 fw-700 text-dark">@Model.TotalUsers</span>
+                <span class="ms-auto text-primary"><i class="bi bi-people fs-5"></i></span>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-2">
+        <a asp-controller="Admin" asp-action="UserManagement" class="text-decoration-none d-block card p-3 mb-0 h-100">
+            <small class="text-uppercase text-muted fw-600 d-block mb-1" style="font-size:0.62rem; letter-spacing:0.05em;">Staff Members</small>
+            <div class="d-flex align-items-baseline gap-1">
+                <span class="fs-4 fw-700 text-dark">@Model.StaffCount</span>
+                <span class="ms-auto text-dark"><i class="bi bi-person-badge fs-5"></i></span>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-2">
+        <a asp-controller="Admin" asp-action="MedicalConditions" class="text-decoration-none d-block card p-3 mb-0 h-100">
+            <small class="text-uppercase text-muted fw-600 d-block mb-1" style="font-size:0.62rem; letter-spacing:0.05em;">Conditions</small>
+            <div class="d-flex align-items-baseline gap-1">
+                <span class="fs-4 fw-700 text-dark">@Model.TotalConditions</span>
+                <span class="ms-auto text-success"><i class="bi bi-clipboard2-pulse fs-5"></i></span>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-2">
+        <a asp-controller="Admin" asp-action="Allergies" class="text-decoration-none d-block card p-3 mb-0 h-100">
+            <small class="text-uppercase text-muted fw-600 d-block mb-1" style="font-size:0.62rem; letter-spacing:0.05em;">Allergies</small>
+            <div class="d-flex align-items-baseline gap-1">
+                <span class="fs-4 fw-700 text-dark">@Model.TotalAllergies</span>
+                <span class="ms-auto text-warning"><i class="bi bi-exclamation-triangle fs-5"></i></span>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-2">
+        <a asp-controller="Admin" asp-action="Medications" class="text-decoration-none d-block card p-3 mb-0 h-100">
+            <small class="text-uppercase text-muted fw-600 d-block mb-1" style="font-size:0.62rem; letter-spacing:0.05em;">Medications</small>
+            <div class="d-flex align-items-baseline gap-1">
+                <span class="fs-4 fw-700 text-dark">@Model.TotalMedications</span>
+                <span class="ms-auto text-info"><i class="bi bi-capsule fs-5"></i></span>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-2">
+        <a asp-controller="Admin" asp-action="SystemArchive" class="text-decoration-none d-block card p-3 mb-0 h-100">
+            <small class="text-uppercase text-muted fw-600 d-block mb-1" style="font-size:0.62rem; letter-spacing:0.05em;">Archived</small>
+            <div class="d-flex align-items-baseline gap-1">
+                <span class="fs-4 fw-700 text-dark">10</span>
+                <span class="ms-auto text-secondary"><i class="bi bi-archive fs-5"></i></span>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 align-items-stretch">
+
+    @* ── Row 1 Left: Quick Actions ── *@
+    <div class="col-lg-4">
+
+        @* Quick Actions *@
+        <div class="card mb-0 h-100">
+            <div class="card-header">
+                <i class="bi bi-lightning-charge-fill text-warning me-2"></i>Quick Actions
+            </div>
+            <div class="p-3 d-flex flex-column gap-2">
+                <a asp-controller="Admin" asp-action="CreateCondition" class="btn btn-outline-secondary text-start d-flex align-items-center justify-content-between py-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-clipboard2-plus text-success fs-5"></i>
+                        <div>
+                            <div class="fw-600 text-dark" style="font-size:0.8rem;">Add Condition</div>
+                            <small class="text-muted" style="font-size:0.68rem;">Add to medical catalogue</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted small"></i>
+                </a>
+                <a asp-controller="Admin" asp-action="CreateAllergy" class="btn btn-outline-secondary text-start d-flex align-items-center justify-content-between py-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle text-warning fs-5"></i>
+                        <div>
+                            <div class="fw-600 text-dark" style="font-size:0.8rem;">Add Allergy</div>
+                            <small class="text-muted" style="font-size:0.68rem;">Add to allergy catalogue</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted small"></i>
+                </a>
+                <a asp-controller="Admin" asp-action="CreateMedication" class="btn btn-outline-secondary text-start d-flex align-items-center justify-content-between py-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-capsule text-info fs-5"></i>
+                        <div>
+                            <div class="fw-600 text-dark" style="font-size:0.8rem;">Add Medication</div>
+                            <small class="text-muted" style="font-size:0.68rem;">Add to medication catalogue</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted small"></i>
+                </a>
+                <a asp-controller="Admin" asp-action="GlobalCategories" class="btn btn-outline-secondary text-start d-flex align-items-center justify-content-between py-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-tags text-primary fs-5"></i>
+                        <div>
+                            <div class="fw-600 text-dark" style="font-size:0.8rem;">Manage Categories</div>
+                            <small class="text-muted" style="font-size:0.68rem;">Add or edit categories</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted small"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @* ── Row 1 Right: Activity Log ── *@
+    <div class="col-lg-8">
+        <div class="card mb-0 h-100">
+            <div class="card-header justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-activity text-primary"></i>
+                    <span>System Activity Log</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted x-small">Showing @Model.ActivityLog.Count most recent</span>
+                    <a asp-controller="Admin" asp-action="ActivityLog" class="btn btn-outline-secondary py-0 px-2 ms-1" style="font-size:0.7rem !important;">View all</a>
+                </div>
+            </div>
+            <div class="p-0" style="max-height:420px; overflow-y:auto;">
+                @foreach (var log in Model.ActivityLog)
+                {
+                    var iconMap = log.Action switch
+                    {
+                        var a when a.Contains("Login") || a.Contains("Logged in") => "bi-box-arrow-in-right",
+                        var a when a.Contains("added") || a.Contains("created") => "bi-plus-circle-fill",
+                        var a when a.Contains("updated") => "bi-pencil-fill",
+                        var a when a.Contains("archived") || a.Contains("deleted") => "bi-archive-fill",
+                        var a when a.Contains("restored") => "bi-arrow-counterclockwise",
+                        var a when a.Contains("deactivated") => "bi-slash-circle-fill",
+                        var a when a.Contains("activated") => "bi-check-circle-fill",
+                        var a when a.Contains("released") => "bi-send-fill",
+                        var a when a.Contains("reset") => "bi-key-fill",
+                        _ => "bi-info-circle-fill"
+                    };
+                    var colorMap = log.LogType switch
+                    {
+                        "success" => "#16a34a",
+                        "warning" => "#d97706",
+                        "danger" => "#dc2626",
+                        _ => "#3b82f6"
+                    };
+                    var bgMap = log.LogType switch
+                    {
+                        "success" => "#f0fdf4",
+                        "warning" => "#fffbeb",
+                        "danger" => "#fef2f2",
+                        _ => "#eff6ff"
+                    };
+                    <div class="d-flex align-items-start gap-3 px-3 py-3 border-bottom" style="font-size:0.8rem;">
+                        <div class="d-flex align-items-center justify-content-center flex-shrink-0 rounded-circle"
+                             style="width:28px;height:28px;background:@bgMap;color:@colorMap;font-size:0.75rem;margin-top:2px;">
+                            <i class="bi @iconMap"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div>
+                                    <span class="fw-600 text-dark">@log.Action</span>
+                                    <span class="text-muted ms-1" style="font-size:0.72rem;">by @log.Actor</span>
+                                    <span class="badge border ms-1 px-1 py-0" style="font-size:0.6rem; color:@colorMap; border-color:@colorMap;">@log.Role</span>
+                                </div>
+                                <span class="text-muted flex-shrink-0" style="font-size:0.68rem; white-space:nowrap;">
+                                    @log.Timestamp.ToString("HH:mm") &bull; @log.Timestamp.ToString("d MMM")
+                                </span>
+                            </div>
+                            <div class="text-muted mt-1" style="font-size:0.72rem; line-height:1.3;">@log.Detail</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ── Row 2 Left: Staff Members ── *@
+    <div class="col-lg-4">
+        <div class="card mb-0 h-100">
+            <div class="card-header justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-badge text-primary"></i>
+                    <span>Staff Members</span>
+                </div>
+                <a asp-controller="Admin" asp-action="UserManagement" class="small text-decoration-none text-primary fw-600">View All</a>
+            </div>
+            <div class="p-0">
+                @foreach (var u in Model.RecentUsers)
+                {
+                    var roleColor = u.Role switch { "Admin" => "danger", "Lab Manager" => "dark", "Doctor" => "primary", "Technician" => "info", _ => "secondary" };
+                    <div class="d-flex align-items-center gap-3 px-3 py-2 border-bottom" style="font-size:0.8rem;">
+                        <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center fw-700 text-dark flex-shrink-0"
+                             style="width:32px;height:32px;font-size:0.7rem;">
+                            @(u.FullName.Split(' ').Take(2).Select(s => s.FirstOrDefault()).Select(c => c.ToString()).Aggregate((a, b) => a + b))
+                        </div>
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="fw-600 text-dark text-truncate">@u.FullName</div>
+                            <div class="text-muted x-small text-truncate">@u.Email</div>
+                        </div>
+                        <span class="badge border text-@roleColor border-@roleColor bg-white px-2 py-1" style="font-size:0.6rem; white-space:nowrap;">@u.Role</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ── Row 2 Right: Master Data Chart ── *@
+    <div class="col-lg-8">
+        <div class="card mb-0 h-100">
+            <div class="card-header">
+                <i class="bi bi-bar-chart text-primary me-2"></i>Master Data Overview
+            </div>
+            <div class="p-3" style="height:280px;">
+                <canvas id="masterDataChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .pulse-dot-small {
+        width: 6px;
+        height: 6px;
+        background: #16a34a;
+        border-radius: 50%;
+        display: inline-block;
+        animation: pulse-sm 2s infinite;
+    }
+
+    @@keyframes pulse-sm {
+        0% {
+            box-shadow: 0 0 0 0 rgba(22,163,74,0.7);
+        }
+
+        70% {
+            box-shadow: 0 0 0 6px rgba(22,163,74,0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(22,163,74,0);
+        }
+    }
+
+    /* ── Header chrome: clock + weather, kept out of the data cards ── */
+    .dash-chrome-strip {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+        margin-top: 0.5rem;
+    }
+
+    .dash-chrome-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: #64748b;
+    }
+
+        .dash-chrome-item i {
+            color: #3b82f6;
+            font-size: 0.85rem;
+        }
+
+    .dash-chrome-sep {
+        color: #cbd5e1;
+    }
+</style>
+
+@section Scripts {
+    <script src="~/lib/chartjs/chart.umd.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Master Data Overview chart
+            new Chart(document.getElementById('masterDataChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Conditions', 'Allergies', 'Medications', 'Categories'],
+                    datasets: [{
+                        data: [@Model.TotalConditions, @Model.TotalAllergies, @Model.TotalMedications, @Model.TotalCategories],
+                        backgroundColor: ['#3b82f6', '#d97706', '#16a34a', '#0f172a'],
+                        borderRadius: 4,
+                        maxBarThickness: 60
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0, color: '#94a3b8' }, grid: { color: '#e2e8f0' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+
+            @if (Model.PendingApprovalsCount > 0)
+            {
+                    <text>
+                    HemaUI.toast({
+                        message: '@Model.PendingApprovalsCount item(s) awaiting your review - patient-submitted allergies, conditions, or medications.',
+                        type: 'warning',
+                        duration: 7000
+                    });
+                    </text>
+            }
+
+            // Header chrome - live clock, time-aware greeting, weather (Gqeberha)
+            var clockEl = document.getElementById('liveClock');
+            function tick() {
+                if (!clockEl) return;
+                clockEl.textContent = new Date().toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }
+            tick();
+            setInterval(tick, 1000);
+
+            var greetEl = document.getElementById('greetingLabel');
+            if (greetEl) {
+                var h = new Date().getHours();
+                greetEl.textContent = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+            }
+
+            var weatherEl = document.getElementById('weatherText');
+            if (weatherEl) {
+                fetch('https://api.open-meteo.com/v1/forecast?latitude=-33.9608&longitude=25.6022&current=temperature_2m,weather_code,wind_speed_10m&wind_speed_unit=kmh&timezone=Africa%2FJohannesburg')
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        var c = data && data.current;
+                        if (!c) { weatherEl.textContent = 'Weather unavailable'; return; }
+                        var codeMap = {
+                            0: 'Clear sky', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Overcast',
+                            45: 'Fog', 48: 'Fog', 51: 'Drizzle', 53: 'Drizzle', 55: 'Drizzle',
+                            61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 71: 'Snow', 80: 'Showers',
+                            81: 'Showers', 82: 'Heavy showers', 95: 'Thunderstorm'
+                        };
+                        var desc = codeMap[c.weather_code] || 'Gqeberha';
+                        weatherEl.textContent = Math.round(c.temperature_2m) + '°C · ' + desc;
+                    })
+                    .catch(function () { weatherEl.textContent = 'Weather unavailable'; });
+            }
+        });
+    </script>
+}

@@ -1,0 +1,70 @@
+﻿@model IEnumerable<Project.Models.LabManager.Doctor>
+@{
+    ViewData["Title"] = "Doctors";
+}
+<partial name="~/Views/LabManager/_NewAccountPassword.cshtml" />
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Doctors</h2>
+    <div class="d-flex gap-2">
+        <a asp-action="Archived" class="btn btn-outline-secondary"><i class="bi bi-archive me-1"></i>View Archived</a>
+        <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add Doctor</a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th class="ps-4">Name</th>
+                    <th>Surname</th>
+                    <th>HPCSA No.</th>
+                    <th>Email</th>
+                    <th>Contact</th>
+                    <th>Status</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var d in Model)
+                    {
+                        <tr>
+                            <td class="ps-4"><strong>@d.Name</strong></td>
+                            <td>@d.Surname</td>
+                            <td><code>@d.HPCSANumber</code></td>
+                            <td><a href="mailto:@d.Email">@d.Email</a></td>
+                            <td>@d.ContactNumber</td>
+                            <td>
+                                @if (d.MustChangePassword)
+                                {
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending First Login</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success"><i class="bi bi-check2 me-1"></i>Active</span>
+                                }
+                            </td>
+                            <td class="text-end pe-4">
+                                <a asp-action="Edit" asp-route-id="@d.Id" class="btn btn-warning btn-sm me-1">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                                <a asp-action="Archive" asp-route-id="@d.Id"
+                                   class="btn btn-danger btn-sm"
+                                   onclick="return hemaConfirm(this, 'Archive Dr @d.Surname?', { title: 'Archive Doctor', confirmText: 'Archive' })">
+                                    <i class="bi bi-archive"></i> Archive
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-inbox fs-4 d-block mb-2"></i>No doctors registered.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

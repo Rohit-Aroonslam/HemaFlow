@@ -1,0 +1,229 @@
+@using Project.Models.LabManager
+@{
+    Layout = "_LabTechLayout";
+    ViewData["Title"] = "Capture Result";
+
+    var item     = (QueueItem)ViewBag.Item;
+    var testType = (Project.Models.LabManager.TestType)ViewBag.TestType;
+    bool isReview = (bool)ViewBag.IsReview;
+
+    string testName = item.TestTypeName;
+    string reqNum   = item.RequestNumber.TrimStart('#');
+    string urgency  = item.Urgency;
+    string urgClass = urgency == "STAT" ? "badge-stat" : urgency == "Urgent" ? "badge-urgent" : "badge-routine";
+    string sample   = item.SampleTypeName;
+    string units    = testType?.Units ?? "";
+    decimal rangeMin = testType?.NormalMin ?? 0;
+    decimal rangeMax = testType?.NormalMax ?? 0;
+    string rangeStr = $"{rangeMin} – {rangeMax}";
+    string started  = item.History?.OrderBy(h => h.Timestamp).FirstOrDefault(h => h.EventType == "Started")?.Timestamp.ToString("dd MMM HH:mm") ?? "-";
+
+    // Prior captured result (review case only) - the value that was returned by the verifier
+    decimal? origValue    = item.ResultValue;
+    string   origUnits    = item.ResultUnits ?? units;
+    bool     origAbnormal = item.Flag == "Abnormal";
+    string   origCaptured = item.CapturedAt?.ToString("dd MMM yyyy HH:mm") ?? "-";
+    string   origNotes    = item.TechNotes ?? "";
+    string   note         = item.VerifierNote ?? "";
+
+    string returnTo     = (ViewBag.ReturnTo as string) ?? "Dashboard";
+    string backAction   = returnTo == "VerificationHistory" ? "VerificationHistory" : "Dashboard";
+    string backLabel    = returnTo == "VerificationHistory" ? "Back to Verification History" : "Back to Dashboard";
+}
+
+@section Styles {
+<style>
+    /* Abnormal flag on input */
+    .result-abnormal { border-color: #ef4444 !important; box-shadow: 0 0 0 0.2rem rgba(239,68,68,0.15) !important; }
+    .result-normal   { border-color: #22c55e !important; box-shadow: 0 0 0 0.2rem rgba(34,197,94,0.12) !important; }
+
+    .abnormal-banner {
+        display: none;
+        align-items: center; gap: 0.5rem;
+        background: #fef2f2; border: 1px solid #fecaca;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem; color: #b91c1c; margin-top: 0.4rem;
+    }
+    .normal-banner {
+        display: none;
+        align-items: center; gap: 0.5rem;
+        background: #f0fdf4; border: 1px solid #bbf7d0;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem; color: #15803d; margin-top: 0.4rem;
+    }
+
+    /* Original result display (review mode) */
+    .orig-result-display {
+        background: #f8fafc; border: 1px solid #e2e8f0;
+        padding: 1rem 1.25rem; margin-bottom: 1rem;
+    }
+    .orig-result-value { font-size: 2.4rem; font-weight: 700; letter-spacing: -1px; line-height: 1; }
+    .orig-result-units { font-size: 0.95rem; font-weight: 500; }
+
+</style>
+}
+
+<div class="mb-4">
+    <a asp-controller="LabTech" asp-action="@backAction" class="btn btn-sm btn-outline-secondary rounded-pill px-3 mb-3">
+        <i class="bi bi-arrow-left me-1"></i> @backLabel
+    </a>
+    <div class="d-flex justify-content-between align-items-center">
+        <h2 class="serif-brand mb-0">@(isReview ? "Resubmit Result" : "Capture Result")</h2>
+        <span class="badge @urgClass rounded-pill px-4 py-2">@urgency</span>
+    </div>
+</div>
+
+@if (isReview)
+{
+    <div class="glass-card p-4 mb-4" style="border-left: 4px solid #f43f5e;">
+        <div class="d-flex align-items-start gap-3">
+            <i class="bi bi-exclamation-triangle-fill text-danger mt-1"></i>
+            <div>
+                <strong>Returned for review, verifier's note:</strong>
+                <p class="mb-0 text-muted small mt-1">@note</p>
+            </div>
+        </div>
+    </div>
+}
+
+<partial name="_PatientContext" model="item" />
+
+@if (isReview)
+{
+    <!-- History trail - shows exactly when/why this test bounced back -->
+    <div class="glass-card p-4 mb-4">
+        <h6 class="text-muted text-uppercase fw-bold small mb-3"><i class="bi bi-clock-history me-1"></i>Test History</h6>
+        <partial name="_HistoryTrail" model="item.History" />
+    </div>
+}
+
+<div class="row g-4">
+
+    <!-- Left: Test Details (+ Original Result when resubmitting) - side by side with the capture card -->
+    <div class="col-lg-5">
+        <div class="glass-card p-4">
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">Test Details</h6>
+            <dl class="info-grid">
+                <dt>Test Type</dt>
+                <dd><strong>@testName</strong></dd>
+                <dt>Request #</dt>
+                <dd><strong>#@reqNum</strong></dd>
+                <dt>Urgency</dt>
+                <dd><span class="badge @urgClass rounded-pill px-3">@urgency</span></dd>
+                <dt>Sample Type</dt>
+                <dd>@sample</dd>
+                <dt>Started</dt>
+                <dd>@started</dd>
+                <dt>Expected by</dt>
+                <dd>@(item.DueAt?.ToString("dd MMM HH:mm") ?? "-") <span class="small @(item.IsOverdue ? "text-danger fw-semibold" : item.IsNearingTat ? "text-warning fw-semibold" : "text-muted")">(@item.DueText)</span></dd>
+            </dl>
+        </div>
+
+        @if (isReview)
+        {
+            <!-- Original result (review only) -->
+            <div class="glass-card p-4 mt-4">
+                <h6 class="text-muted text-uppercase fw-bold small mb-3"><i class="bi bi-clock-history me-1"></i>Original Result</h6>
+                <div class="orig-result-display">
+                    <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                        <span class="fw-semibold small">@testName</span>
+                        <span class="text-muted" style="font-size:0.72rem;">@origCaptured</span>
+                    </div>
+                    <div class="d-flex align-items-baseline gap-2 mt-1">
+                        <span class="orig-result-value @(origAbnormal ? "text-danger" : "text-success")">
+                            @origValue <span class="orig-result-units">@origUnits</span>
+                        </span>
+                        <span class="badge @(origAbnormal ? "bg-danger-subtle text-danger" : "bg-success-subtle text-success") rounded-pill px-3">
+                            @(origAbnormal ? "Abnormal" : "Normal")
+                        </span>
+                    </div>
+                    <div class="text-muted mt-2" style="font-size:0.72rem;">
+                        Normal range: @rangeStr @origUnits
+                    </div>
+                </div>
+                <div style="font-size:0.78rem;">
+                    <span class="text-muted fw-medium">Tech notes: </span>
+                    <span class="text-muted">@origNotes</span>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Right: Capture form -->
+    <div class="col-lg-7">
+        <div class="glass-card p-5">
+            <h6 class="text-muted text-uppercase fw-bold small mb-4">@(isReview ? "Resubmit Result" : "Capture Result")</h6>
+            <form asp-controller="LabTech" asp-action="CaptureResult" method="post" class="confirm-form"
+                  data-message="Save this result and submit it for verification?">
+                <input type="hidden" name="id" value="@item.Id" />
+                <input type="hidden" name="returnTo" value="@returnTo" />
+
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-uppercase">Result Value</label>
+                    <div class="input-group">
+                        <input type="number" step="0.01" name="ResultValue"
+                               class="form-control" id="resultInput"
+                               placeholder="Enter result value" autofocus />
+                        <span class="input-group-text bg-light border-0">@units</span>
+                    </div>
+                    <div class="text-muted mt-1" style="font-size:0.72rem;">Normal: @rangeStr @units</div>
+                    <div class="abnormal-banner" id="abnormalBanner">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>Value is outside the normal range (<strong>@rangeStr @units</strong>) - flagged as abnormal.</span>
+                    </div>
+                    <div class="normal-banner" id="normalBanner">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>Value is within the normal range (<strong>@rangeStr @units</strong>).</span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-uppercase">Notes <span class="text-muted fw-normal">(optional)</span></label>
+                    <textarea name="Notes" class="form-control" rows="3"
+                              placeholder="Clinical observations or comments…"></textarea>
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end">
+                    <a asp-controller="LabTech" asp-action="@backAction" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                    <button type="submit" class="btn btn-dark rounded-pill px-5">
+                        <i class="bi bi-check-lg me-1"></i>Save Result
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    var input    = document.getElementById('resultInput');
+    var abnBanner  = document.getElementById('abnormalBanner');
+    var normBanner = document.getElementById('normalBanner');
+    var min = @rangeMin, max = @rangeMax;
+
+    input.addEventListener('input', function () {
+        var val = parseFloat(input.value);
+        if (isNaN(val) || input.value === '') {
+            input.classList.remove('result-abnormal', 'result-normal');
+            abnBanner.style.display  = 'none';
+            normBanner.style.display = 'none';
+            return;
+        }
+
+        if (val < min || val > max) {
+            input.classList.add('result-abnormal');
+            input.classList.remove('result-normal');
+            abnBanner.style.display  = 'flex';
+            normBanner.style.display = 'none';
+        } else {
+            input.classList.add('result-normal');
+            input.classList.remove('result-abnormal');
+            normBanner.style.display = 'flex';
+            abnBanner.style.display  = 'none';
+        }
+    });
+})();
+</script>
+}

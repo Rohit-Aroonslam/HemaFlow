@@ -1,0 +1,59 @@
+@model Project.Models.TwoFactorSetupViewModel
+@{
+    Layout = "_LabTechLayout";
+    ViewData["Title"] = "Set Up Two-Factor Authentication";
+}
+
+<a asp-controller="LabTech" asp-action="Profile" class="btn btn-sm btn-outline-secondary rounded-pill px-3 mb-3">
+    <i class="bi bi-arrow-left me-1"></i> Back to Profile
+</a>
+<div class="mb-4">
+    <h2 class="serif-brand mb-1">Set Up Two-Factor Authentication</h2>
+    <p class="text-muted mb-0">Use an authenticator app like Google Authenticator or Microsoft Authenticator.</p>
+</div>
+
+<div class="row g-4" style="max-width: 680px;">
+    <div class="col-12">
+        <div class="glass-card p-4">
+            <h6 class="text-muted text-uppercase fw-bold small mb-3"><i class="bi bi-qr-code me-1"></i>Step 1: Scan This QR Code</h6>
+            <div class="text-center">
+                <div id="qrCodeContainer" class="d-flex justify-content-center mb-3"></div>
+                <p class="text-muted small mb-2">Can't scan it? Enter this key manually in your authenticator app:</p>
+                <div class="d-inline-block px-3 py-2 bg-light border" style="font-family:'Courier New',monospace; font-size:0.95rem; letter-spacing:0.08em;">
+                    @Model.SecretKey
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="glass-card p-4">
+            <h6 class="text-muted text-uppercase fw-bold small mb-3"><i class="bi bi-shield-check me-1"></i>Step 2: Enter The Code From Your App</h6>
+            <form asp-action="Setup2FAConfirm" asp-controller="LabTech" method="post" class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold text-uppercase">6-Digit Code</label>
+                    <input type="text" name="code" class="form-control" placeholder="123456" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
+                </div>
+                <div class="col-md-6">
+                    <button type="submit" class="btn btn-dark rounded-pill w-100">
+                        <i class="bi bi-check-lg me-1"></i>Confirm &amp; Enable 2FA
+                    </button>
+                </div>
+            </form>
+            <p class="text-muted mt-3 mb-0" style="font-size:0.72rem;">
+                The code refreshes every 30 seconds. If it doesn't match, wait for the next one and try again.
+            </p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        new QRCode(document.getElementById("qrCodeContainer"), {
+            text: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OtpAuthUri)),
+            width: 200,
+            height: 200
+        });
+    </script>
+}

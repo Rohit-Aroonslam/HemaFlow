@@ -1,0 +1,42 @@
+﻿@model Project.Models.LabManager.ManagerProfile
+@{
+    ViewData["Title"] = "Edit Profile";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Edit Profile</h2>
+    <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="card shadow-sm border-0" style="max-width:520px">
+    <div class="card-body p-4">
+        <form asp-action="Edit" method="post">
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Surname <span class="text-danger">*</span></label>
+                    <input asp-for="Surname" class="form-control" />
+                    <span asp-validation-for="Surname" class="text-danger small"></span>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+                <input asp-for="Email" class="form-control" type="email" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Contact Number <span class="text-danger">*</span></label>
+                <input asp-for="ContactNumber" class="form-control" />
+                <span asp-validation-for="ContactNumber" class="text-danger small"></span>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-warning"><i class="bi bi-save me-1"></i>Save Changes</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

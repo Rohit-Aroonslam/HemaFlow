@@ -1,0 +1,207 @@
+@model Project.Models.MyResultsViewModel
+@{
+    Layout = "_PatientLayout";
+    ViewData["Title"] = "My Results | Hema Flow";
+    int? highlightId = ViewBag.HighlightRequestId as int?;
+
+    // One row per test REQUEST; every test in that request is opened on the next page.
+    var groups = Model.Results
+        .GroupBy(r => r.RequestId)
+        .Select(g =>
+        {
+            Model.Requests.TryGetValue(g.Key, out var info);
+            return new
+            {
+                RequestId = g.Key,
+                Name = info?.TestName ?? "Test request",
+                Date = info?.RequestDate ?? g.Max(x => x.ResultDate),
+                Tests = g.OrderBy(x => x.TestName).ToList(),
+                Abnormal = g.Count(x => x.IsAbnormal)
+            };
+        })
+        .OrderByDescending(g => g.Date)
+        .ToList();
+}
+
+<div class="row align-items-center mb-4 g-3">
+    <div class="col-md-8">
+        <h4 class="fw-700 mb-1" style="color: #0f172a;">My Results</h4>
+        <p class="text-muted small mb-0">Each row is one test request. Open it to see every test that was done on that day, and download the full report as a PDF.</p>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-5">
+        <div class="bg-white border p-2 px-3 d-flex align-items-center" style="height:42px;">
+            <div class="input-group">
+                <span class="input-group-text bg-transparent border-0 text-muted ps-0"><i class="bi bi-search"></i></span>
+                <input type="text" id="resultSearch" class="form-control border-0 shadow-none small text-dark" placeholder="Search by request or test name...">
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="d-flex gap-2">
+            <select id="resultCategoryFilter" class="form-select border bg-white small rounded-0" style="height:42px;">
+                <option value="">All Categories</option>
+                @foreach (var cat in Model.Results.Select(r => r.Category).Distinct().OrderBy(c => c))
+                {
+                    <option value="@cat">@cat</option>
+                }
+            </select>
+            <button type="button" id="resultClearFilters" class="btn btn-outline-secondary py-2 px-3 text-nowrap" style="font-size:0.8rem;">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="d-flex gap-2" style="height:42px;">
+            <button type="button" id="resultStatusAll" class="btn btn-dark flex-fill status-filter-btn active" data-status="" style="font-size:0.78rem;">All</button>
+            <button type="button" id="resultStatusNormal" class="btn btn-outline-success flex-fill status-filter-btn" data-status="normal" style="font-size:0.78rem;">Normal</button>
+            <button type="button" id="resultStatusAbnormal" class="btn btn-outline-danger flex-fill status-filter-btn" data-status="abnormal" style="font-size:0.78rem;">Abnormal</button>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-0">
+    <div class="card-header justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-clipboard2-data text-primary"></i>
+            <span>Released Test Requests</span>
+        </div>
+        <span class="text-muted x-small" id="resultCount">@groups.Count request(s)</span>
+    </div>
+    <div class="p-0">
+        @if (!groups.Any())
+        {
+            <div class="p-4 text-center text-muted small">
+                <i class="bi bi-inbox d-block fs-2 mb-2 opacity-30"></i>
+                No results have been released yet.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="resultsTable" style="font-size:0.82rem;">
+                    <thead>
+                        <tr class="bg-light text-muted text-uppercase fw-600" style="font-size:0.68rem; border-bottom:1px solid #e2e8f0;">
+                            <th class="ps-3 py-2">Request</th>
+                            <th class="py-2">Date</th>
+                            <th class="py-2">Tests</th>
+                            <th class="py-2">Status</th>
+                            <th class="text-end pe-3 py-2"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var g in groups)
+                        {
+                            var names = string.Join(", ", g.Tests.Select(t => t.TestName));
+                            var cats = string.Join("|", g.Tests.Select(t => t.Category).Distinct());
+                            <tr style="border-bottom:1px solid #f1f5f9;" class="@(g.Abnormal > 0 ? "table-danger bg-opacity-10" : "")"
+                                data-request-id="@g.RequestId"
+                                data-name="@((g.Name + " " + names).ToLower())"
+                                data-categories="@cats"
+                                data-status="@((g.Abnormal > 0 ? "abnormal " : "") + (g.Tests.Count - g.Abnormal > 0 ? "normal" : "")).Trim()">
+                                <td class="ps-3 py-3">
+                                    <div class="fw-600 text-dark">@g.Name</div>
+                                    <div class="text-muted x-small">Request #REQ-@g.RequestId</div>
+                                </td>
+                                <td class="text-muted x-small">@g.Date.ToString("d MMM yyyy")</td>
+                                <td>
+                                    <div class="fw-600 text-dark">@g.Tests.Count test@(g.Tests.Count == 1 ? "" : "s")</div>
+                                    <div class="text-muted x-small text-truncate" style="max-width:320px;" title="@names">@names</div>
+                                </td>
+                                <td>
+                                    @{ var normalCt = g.Tests.Count - g.Abnormal; }
+                                    @if (g.Abnormal > 0)
+                                    {
+                                        <span class="badge bg-danger text-white px-2 me-1" style="font-size:0.65rem;"><i class="bi bi-exclamation-triangle me-1"></i>@g.Abnormal abnormal</span>
+                                    }
+                                    @if (normalCt > 0)
+                                    {
+                                        <span class="badge bg-success text-white px-2" style="font-size:0.65rem;"><i class="bi bi-check-circle me-1"></i>@(g.Abnormal == 0 ? "All normal" : normalCt + " normal")</span>
+                                    }
+                                </td>
+                                <td class="text-end pe-3 text-nowrap">
+                                    <a asp-controller="Patient" asp-action="RequestResults" asp-route-id="@g.RequestId" class="btn btn-outline-secondary py-1 px-2" style="font-size:0.72rem !important;">
+                                        <i class="bi bi-eye me-1"></i>View Details
+                                    </a>
+                                    <a asp-controller="Patient" asp-action="DownloadResult" asp-route-id="@g.RequestId" class="btn btn-dark py-1 px-2" style="font-size:0.72rem !important;">
+                                        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                        <tr id="resultEmptyState" style="display:none;">
+                            <td colspan="5" class="text-center text-muted py-4">
+                                <i class="bi bi-search me-2"></i>No requests match your filters.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var highlightId = @(highlightId.HasValue? highlightId.Value.ToString() : "null");
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const searchEl = document.getElementById('resultSearch');
+            const catEl = document.getElementById('resultCategoryFilter');
+            const rows = document.querySelectorAll('#resultsTable tbody tr:not(#resultEmptyState)');
+            const totalCount = rows.length;
+            let activeStatus = '';
+
+            function applyFilters() {
+                const q = searchEl.value.trim().toLowerCase();
+                const cat = catEl.value;
+                let visible = 0;
+                rows.forEach(function (row) {
+                    const match = row.dataset.name.includes(q) &&
+                        (!cat || row.dataset.categories.split('|').includes(cat)) &&
+                        (!activeStatus || row.dataset.status.split(" ").includes(activeStatus));
+                    row.style.display = match ? '' : 'none';
+                    if (match) visible++;
+                });
+                document.getElementById('resultEmptyState').style.display = visible === 0 ? '' : 'none';
+                document.getElementById('resultCount').textContent = 'Showing ' + visible + ' of ' + totalCount;
+            }
+
+            if (searchEl) {
+                searchEl.addEventListener('input', applyFilters);
+                catEl.addEventListener('change', applyFilters);
+
+                document.querySelectorAll('.status-filter-btn').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        activeStatus = this.dataset.status;
+                        document.querySelectorAll('.status-filter-btn').forEach(function (b) {
+                            b.classList.remove('active', 'btn-dark', 'btn-success', 'btn-danger');
+                            b.classList.add(b.id === 'resultStatusNormal' ? 'btn-outline-success' : b.id === 'resultStatusAbnormal' ? 'btn-outline-danger' : 'btn-outline-secondary');
+                        });
+                        this.classList.remove('btn-outline-success', 'btn-outline-danger', 'btn-outline-secondary');
+                        this.classList.add('active', this.id === 'resultStatusNormal' ? 'btn-success' : this.id === 'resultStatusAbnormal' ? 'btn-danger' : 'btn-dark');
+                        applyFilters();
+                    });
+                });
+
+                document.getElementById('resultClearFilters').addEventListener('click', function () {
+                    searchEl.value = '';
+                    catEl.value = '';
+                    document.getElementById('resultStatusAll').click();
+                });
+            }
+
+            if (!highlightId) return;
+            var matchingRows = document.querySelectorAll('tr[data-request-id="' + highlightId + '"]');
+            if (!matchingRows.length) return;
+            matchingRows[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            matchingRows.forEach(function (row) {
+                row.style.transition = 'background-color 0.4s ease';
+                row.style.backgroundColor = '#fef3c7';
+                setTimeout(function () { row.style.backgroundColor = ''; }, 2500);
+            });
+        });
+    </script>
+}

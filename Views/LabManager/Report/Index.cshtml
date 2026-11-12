@@ -1,0 +1,257 @@
+﻿@{
+    ViewData["Title"] = "Reports";
+}
+
+@* Scoped to this page only - matches the Patient Portal report look, doesn't touch the shared Lab Manager layout/css *@
+<style>
+    .lab-report-page .card {
+        background: #ffffff;
+        border: none !important;
+        border-radius: 0.75rem !important;
+        box-shadow: none !important;
+        margin-bottom: 1.5rem;
+    }
+
+    .lab-report-page .card-header {
+        background: #ffffff !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        padding: 1rem 1.25rem !important;
+        display: flex;
+        align-items: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #0f172a !important;
+    }
+
+    .lab-report-page .btn-dark {
+        background: #0f172a !important;
+        border: 1px solid #0f172a !important;
+        border-radius: 0.5rem;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        padding: 0.55rem 1.25rem !important;
+        transition: all 0.15s ease;
+    }
+
+        .lab-report-page .btn-dark:hover {
+            background: #1e293b !important;
+            border-color: #1e293b !important;
+        }
+
+    .lab-report-page .btn-outline-secondary {
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #334155 !important;
+        border-radius: 0.5rem;
+        font-size: 0.72rem !important;
+        font-weight: 600 !important;
+        box-shadow: none !important;
+    }
+
+        .lab-report-page .btn-outline-secondary:hover,
+        .lab-report-page .btn-outline-secondary.active {
+            background: #f8fafc !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+
+    .lab-report-page .lab-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.6rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        border-radius: 50rem !important;
+        border: 1px solid #bfdbfe;
+        color: #2563eb;
+        background: #fff;
+    }
+
+    .lab-report-page .stat-icon {
+        font-size: 1.2rem;
+        line-height: 1;
+    }
+
+    .lab-report-page .x-small {
+        font-size: 0.68rem;
+    }
+</style>
+
+<div class="lab-report-page">
+
+    <div class="row align-items-center mb-4 g-3">
+        <div class="col-md-8">
+            <h4 class="fw-bold mb-1" style="color:#0f172a;">Reports</h4>
+            <p class="text-muted small mb-0">Generate and export lab activity reports grouped by test category.</p>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div data-toast="success" class="alert alert-success rounded-0 border-0 border-start border-3 border-success small mb-4">
+            <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+        </div>
+    }
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div data-toast="warning" class="alert alert-warning rounded-0 border-0 border-start border-3 border-warning small mb-4">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@ViewBag.ErrorMessage
+        </div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card mb-0 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-2 bg-light border text-primary stat-icon">
+                        <i class="bi bi-tags"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted x-small text-uppercase fw-semibold" style="letter-spacing:0.05em;">Test Categories</div>
+                        <div class="fw-bold text-dark" style="font-size:1.2rem;">@ViewBag.CategoryCount</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-0 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-2 bg-light border text-success stat-icon">
+                        <i class="bi bi-clipboard2-pulse"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted x-small text-uppercase fw-semibold" style="letter-spacing:0.05em;">Active Test Types</div>
+                        <div class="fw-bold text-dark" style="font-size:1.2rem;">@ViewBag.TestTypeCount</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-0 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-2 bg-light border text-warning stat-icon">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted x-small text-uppercase fw-semibold" style="letter-spacing:0.05em;">Last Period Run</div>
+                        <div class="fw-bold text-dark" style="font-size:1.2rem;">@(ViewBag.PeriodLabel ?? "-")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        @* ── Generate Report Panel ── *@
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <i class="bi bi-file-earmark-pdf text-danger me-2"></i>Generate &amp; Export Report
+                </div>
+                <div class="p-3">
+                    <form asp-action="Generate" asp-controller="Report" method="post">
+
+                        <div class="mb-2">
+                            <label class="form-label x-small text-muted text-uppercase fw-semibold mb-1">Quick Range</label>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary flex-fill quick-range-btn" data-days="30">30 Days</button>
+                                <button type="button" class="btn btn-outline-secondary flex-fill quick-range-btn" data-days="90">3 Months</button>
+                                <button type="button" class="btn btn-outline-secondary flex-fill quick-range-btn" data-days="365">1 Year</button>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-4">
+                            <div class="col-6">
+                                <label class="form-label x-small text-muted text-uppercase fw-semibold mb-1">Start Date <span class="text-danger">*</span></label>
+                                <input type="date" name="startDate" id="startDateInput"
+                                       class="form-control bg-light border-0 rounded-0 shadow-none small py-2" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label x-small text-muted text-uppercase fw-semibold mb-1">End Date <span class="text-danger">*</span></label>
+                                <input type="date" name="endDate" id="endDateInput"
+                                       class="form-control bg-light border-0 rounded-0 shadow-none small py-2" required>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="export" value="view" class="btn btn-dark">
+                                <i class="bi bi-bar-chart me-2"></i>Generate Report
+                            </button>
+                            <button type="submit" name="export" value="pdf" class="btn btn-outline-secondary">
+                                <i class="bi bi-file-earmark-arrow-down me-2 text-danger"></i>Export as PDF
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        @* ── Report Results ── *@
+        <div class="col-lg-8">
+            <div class="card h-100 mb-0">
+                <div class="card-header justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-clipboard2-data text-primary"></i>
+                        <span>Report Results</span>
+                    </div>
+                    @if (ViewBag.Report != null)
+                    {
+                        <span class="text-muted x-small">@ViewBag.Report.Count category(ies)</span>
+                    }
+                </div>
+                <div class="p-0">
+                    @if (ViewBag.Report == null)
+                    {
+                        <div class="p-4 text-muted small">Choose a date range and generate a report to see results here.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" style="font-size:0.82rem;">
+                                <thead>
+                                    <tr class="bg-light text-muted text-uppercase fw-semibold" style="font-size:0.68rem; border-bottom:1px solid #e2e8f0;">
+                                        <th class="ps-3 py-2">Category</th>
+                                        <th class="py-2">Total Tests</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in ViewBag.Report)
+                                    {
+                                        <tr style="border-bottom:1px solid #f1f5f9;">
+                                            <td class="ps-3 py-3">
+                                                <span class="lab-pill">@item.Category</span>
+                                            </td>
+                                            <td class="fw-semibold text-dark">@item.TotalTests</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.quick-range-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const days = parseInt(this.dataset.days, 10);
+                const to = new Date();
+                const from = new Date();
+                from.setDate(from.getDate() - days);
+                const fmt = d => d.toISOString().split('T')[0];
+                document.getElementById('startDateInput').value = fmt(from);
+                document.getElementById('endDateInput').value = fmt(to);
+
+                document.querySelectorAll('.quick-range-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+}

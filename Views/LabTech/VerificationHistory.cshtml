@@ -1,0 +1,358 @@
+@using Project.Models.LabManager
+@{
+    Layout = "_LabTechLayout";
+    ViewData["Title"] = "Verification History";
+
+    var items = (List<QueueItem>)ViewBag.Items;
+    string me = (string)ViewBag.Me;
+    var verifiableIds = (HashSet<int>)ViewBag.VerifiableIds;
+
+    string Outcome(QueueItem q) => q.Status switch
+    {
+        "Verified"  => "Verified",
+        "Review"    => "Returned",
+        _           => "Pending" // Verify
+    };
+
+    var records = items.Select(q => new
+    {
+        Item       = q,
+        Req        = q.RequestNumber.TrimStart('#'),
+        Date       = q.CapturedAt?.ToString("dd MMM yyyy") ?? "-",
+        Test       = q.TestTypeName,
+        Patient    = q.PatientName,
+        Result     = q.ResultValue,
+        Units      = q.ResultUnits,
+        Abnormal   = q.Flag == "Abnormal",
+        Urgency    = q.Urgency,
+        UrgCls     = q.Urgency == "STAT" ? "badge-stat" : q.Urgency == "Urgent" ? "badge-urgent" : "badge-routine",
+        PerformedBy = q.CapturedBy ?? "-",
+        CapturedAt = q.CapturedAt?.ToString("dd MMM HH:mm") ?? "-",
+        Outcome    = Outcome(q),
+        VerifiedBy = q.Status == "Verified" ? q.VerifiedBy : q.History?.LastOrDefault(h => h.EventType == "Returned")?.By,
+        VerifiedAt = (q.Status == "Verified" ? q.VerifiedAt : q.History?.LastOrDefault(h => h.EventType == "Returned")?.Timestamp)?.ToString("dd MMM HH:mm"),
+        Note       = q.Status == "Review" ? q.VerifierNote : (q.History?.LastOrDefault(h => h.EventType == "Verified")?.Note ?? ""),
+    }).ToList();
+
+    int totalCount    = records.Count;
+    int verifiedCount = records.Count(r => r.Outcome == "Verified");
+    int returnedCount = records.Count(r => r.Outcome == "Returned");
+    int pendingCount  = records.Count(r => r.Outcome == "Pending");
+    double Pct(int n) => totalCount == 0 ? 0 : (double)n / totalCount * 100;
+}
+
+<div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+        <h2 class="serif-brand">Verification History</h2>
+        <p class="text-muted mb-0">Audit trail of all captured and verified results.</p>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="glass-card p-4 text-center">
+            <p class="text-muted small text-uppercase fw-bold mb-1">Total Records</p>
+            <h2 class="serif-brand mb-0">@totalCount</h2>
+            <div class="vh-progress mt-2"><div class="vh-progress-bar" style="width:100%; background:#cbd5e1;"></div></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="glass-card p-4 text-center">
+            <p class="text-muted small text-uppercase fw-bold mb-1">Verified</p>
+            <h2 class="serif-brand mb-0 text-success">@verifiedCount</h2>
+            <div class="vh-progress mt-2"><div class="vh-progress-bar" style="width:@(Pct(verifiedCount).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%; background:#16a34a;"></div></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="glass-card p-4 text-center">
+            <p class="text-muted small text-uppercase fw-bold mb-1">Returned</p>
+            <h2 class="serif-brand mb-0" style="color:#d97706;">@returnedCount</h2>
+            <div class="vh-progress mt-2"><div class="vh-progress-bar" style="width:@(Pct(returnedCount).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%; background:#d97706;"></div></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="glass-card p-4 text-center">
+            <p class="text-muted small text-uppercase fw-bold mb-1">Pending Review</p>
+            <h2 class="serif-brand mb-0 text-secondary">@pendingCount</h2>
+            <div class="vh-progress mt-2"><div class="vh-progress-bar" style="width:@(Pct(pendingCount).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%; background:#64748b;"></div></div>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card p-3 mb-4">
+    <div class="row g-2 align-items-center">
+        <div class="col-md-4">
+            <div class="input-group">
+                <span class="input-group-text bg-transparent border-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" id="searchInput" class="form-control border-0 bg-transparent"
+                       placeholder="Search test, patient, request…">
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="text-muted small me-1">Status:</span>
+                <button class="btn btn-sm rounded-pill px-3 btn-dark filter-btn" data-filter="status" data-value="all">All</button>
+                <button class="btn btn-sm rounded-pill px-3 btn-outline-secondary filter-btn" data-filter="status" data-value="verified">Verified</button>
+                <button class="btn btn-sm rounded-pill px-3 btn-outline-secondary filter-btn" data-filter="status" data-value="returned">Returned</button>
+                <button class="btn btn-sm rounded-pill px-3 btn-outline-secondary filter-btn" data-filter="status" data-value="pending">Pending</button>
+                <span class="text-muted small ms-3 me-1">Urgency:</span>
+                <button class="btn btn-sm rounded-pill px-3 btn-dark filter-btn" data-filter="urgency" data-value="all">All</button>
+                <button class="btn btn-sm rounded-pill px-3 btn-outline-secondary filter-btn" data-filter="urgency" data-value="stat">STAT</button>
+                <button class="btn btn-sm rounded-pill px-3 btn-outline-secondary filter-btn" data-filter="urgency" data-value="urgent">Urgent</button>
+                <button class="btn btn-sm rounded-pill px-3 btn-outline-secondary filter-btn" data-filter="urgency" data-value="routine">Routine</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="text-muted text-uppercase fw-bold small mb-0">Records</h6>
+        <span class="small text-muted"><span id="visibleCount">@totalCount</span> of @totalCount records</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="historyTable">
+            <thead>
+                <tr class="text-muted small">
+                    <th class="sortable" data-sort="request">REQUEST <i class="bi bi-chevron-expand sort-icon"></i></th>
+                    <th class="sortable" data-sort="test">TEST &amp; PATIENT <i class="bi bi-chevron-expand sort-icon"></i></th>
+                    <th class="sortable" data-sort="result">RESULT <i class="bi bi-chevron-expand sort-icon"></i></th>
+                    <th class="sortable" data-sort="capturedby">CAPTURED BY <i class="bi bi-chevron-expand sort-icon"></i></th>
+                    <th class="sortable" data-sort="outcome">OUTCOME <i class="bi bi-chevron-expand sort-icon"></i></th>
+                    <th class="text-end">ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody id="historyBody">
+                @if (!records.Any())
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-4">No verification records yet.</td></tr>
+                }
+                @foreach (var r in records)
+                {
+                    string oc = r.Outcome.ToLower();
+                    string outcomeCls = r.Outcome == "Verified" ? "badge-completed"
+                                       : r.Outcome == "Returned" ? "bg-warning-subtle text-warning"
+                                       : "bg-light text-muted border";
+                    string outcomeIcon = r.Outcome == "Verified" ? "bi-check-lg"
+                                       : r.Outcome == "Returned" ? "bi-arrow-return-left"
+                                       : "bi-hourglass-split";
+                    <tr data-search="@(r.Test?.ToLower()) @(r.Patient?.ToLower()) @(r.Req.ToLower())"
+                        data-status="@oc"
+                        data-urgency="@r.Urgency.ToLower()"
+                        data-sort-request="@r.Req"
+                        data-sort-test="@r.Test?.ToLower()"
+                        data-sort-result="@(r.Result?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+                        data-sort-capturedby="@(r.Item.CapturedAt?.Ticks ?? 0)"
+                        data-sort-outcome="@r.Outcome">
+
+                        <td>
+                            <div class="fw-bold">#@r.Req</div>
+                            <div class="text-muted small">@r.Date</div>
+                        </td>
+
+                        <td>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="fw-medium">@r.Test</span>
+                                <span class="badge @r.UrgCls rounded-pill px-2" style="font-size:0.64rem;">@r.Urgency</span>
+                            </div>
+                            <div class="text-muted small">@r.Patient</div>
+                        </td>
+
+                        <td>
+                            <span class="fw-bold @(r.Abnormal ? "text-danger" : "text-success")">@r.Result</span>
+                            <span class="text-muted small ms-1">@r.Units</span>
+                            @if (r.Abnormal)
+                            {
+                                <div><span class="badge bg-danger-subtle text-danger rounded-pill px-2" style="font-size:0.65rem;">Abnormal</span></div>
+                            }
+                        </td>
+
+                        <td>
+                            <div>@r.PerformedBy</div>
+                            <div class="text-muted small">@r.CapturedAt</div>
+                        </td>
+
+                        <td>
+                            <span class="badge @outcomeCls rounded-pill px-3"><i class="bi @outcomeIcon me-1"></i>@r.Outcome</span>
+                            @if (r.Outcome != "Pending" && !string.IsNullOrEmpty(r.VerifiedBy))
+                            {
+                                <div class="text-muted small mt-1">by @r.VerifiedBy &middot; @r.VerifiedAt</div>
+                            }
+                            @if (!string.IsNullOrEmpty(r.Note))
+                            {
+                                <div class="text-muted small mt-1 text-truncate" style="max-width:220px;" title="@r.Note">&ldquo;@r.Note&rdquo;</div>
+                            }
+                        </td>
+
+                        <td class="text-end">
+                            <div class="d-flex gap-2 justify-content-end flex-wrap">
+                                @if (r.Outcome == "Returned" && r.Item.CapturedBy == me)
+                                {
+                                    <a asp-controller="LabTech" asp-action="CaptureResult" asp-route-id="@r.Item.Id" asp-route-returnTo="VerificationHistory"
+                                       class="btn btn-dark btn-sm rounded-pill px-3" title="Review the verifier's note and resubmit a corrected result.">
+                                        <i class="bi bi-pencil me-1"></i>Resume
+                                    </a>
+                                }
+                                else if (r.Outcome == "Pending" && verifiableIds.Contains(r.Item.Id))
+                                {
+                                    <a asp-controller="LabTech" asp-action="VerifyResult" asp-route-id="@r.Item.Id" asp-route-returnTo="VerificationHistory"
+                                       class="btn btn-dark btn-sm rounded-pill px-3" title="Verify or return this result.">
+                                        <i class="bi bi-shield-check me-1"></i>Verify
+                                    </a>
+                                }
+                                <button type="button" class="btn btn-outline-dark btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modal-trail-@r.Item.Id">
+                                    <i class="bi bi-signpost-split me-1"></i>View Trail
+                                </button>
+                            </div>
+                        </td>
+
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div id="emptyState" class="text-center text-muted py-4" style="display:none;">
+            <i class="bi bi-search fs-3 d-block mb-2 opacity-40"></i>
+            No records match the current filters.
+        </div>
+    </div>
+</div>
+
+@* ── Per-item trail modals ─────────────────────────────────── *@
+@foreach (var r in records)
+{
+    <div class="modal fade" id="modal-trail-@r.Item.Id" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="border-radius:0.75rem; border:1px solid #e1e1e1;">
+                <div class="modal-header border-bottom" style="padding:1.5rem 1.75rem;">
+                    <div>
+                        <h6 class="modal-title fw-bold mb-1"><i class="bi bi-signpost-split me-2"></i>Test History - #@r.Req</h6>
+                        <p class="text-muted small mb-0">Full audit trail from sample receipt through to outcome.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding:1.75rem;">
+                    <dl class="info-grid mb-4">
+                        <dt>Test</dt>
+                        <dd class="fw-semibold">@r.Test</dd>
+                        <dt>Patient</dt>
+                        <dd>@r.Patient</dd>
+                        <dt>Urgency</dt>
+                        <dd><span class="badge @r.UrgCls rounded-pill px-3">@r.Urgency</span></dd>
+                        <dt>Performed By</dt>
+                        <dd>@r.PerformedBy</dd>
+                        @if (!string.IsNullOrEmpty(r.Note))
+                        {
+                            <dt>Note</dt>
+                            <dd class="text-muted">@r.Note</dd>
+                        }
+                    </dl>
+                    <div class="trail-lazy" data-url="@Url.Action("TrailPartial", "LabTech", new { id = r.Item.Id })">
+                        <div class="lazy-loading">
+                            <div class="loading-bars sm"><span></span><span></span><span></span><span></span><span></span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top" style="padding:1rem 1.75rem;">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Styles {
+<style>
+    #historyTable th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+    #historyTable th.sortable:hover { color: #0f172a; }
+    #historyTable th .sort-icon { font-size: 0.75rem; margin-left: 0.2rem; opacity: 0.35; }
+    #historyTable th.sortable.sort-asc .sort-icon,
+    #historyTable th.sortable.sort-desc .sort-icon { opacity: 1; }
+    #historyTable td { padding-top: 0.85rem; padding-bottom: 0.85rem; }
+
+    /* ── Proportion bars under each stat tile ── */
+    .vh-progress { height: 4px; background: #f1f5f9; overflow: hidden; }
+    .vh-progress-bar { height: 100%; transition: width 0.5s ease; }
+</style>
+}
+
+@section Scripts {
+<script>
+(function () {
+    var searchInput  = document.getElementById('searchInput');
+    var visibleCount = document.getElementById('visibleCount');
+    var emptyState   = document.getElementById('emptyState');
+    var tbody        = document.getElementById('historyBody');
+    var rows         = Array.from(document.querySelectorAll('#historyBody tr'));
+    var activeStatus  = 'all';
+    var activeUrgency = 'all';
+
+    // ── Sorting ──────────────────────────────────────────────
+    var sortKey = null, sortDir = 1; // 1 = asc, -1 = desc
+
+    document.querySelectorAll('#historyTable th.sortable').forEach(function (th) {
+        th.addEventListener('click', function () {
+            var key = th.dataset.sort;
+            sortDir = (sortKey === key) ? -sortDir : 1;
+            sortKey = key;
+
+            document.querySelectorAll('#historyTable th.sortable').forEach(function (h) {
+                h.classList.remove('sort-asc', 'sort-desc');
+                var icon = h.querySelector('.sort-icon');
+                icon.className = 'bi bi-chevron-expand sort-icon';
+            });
+            th.classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
+            th.querySelector('.sort-icon').className = 'bi sort-icon ' + (sortDir === 1 ? 'bi-chevron-up' : 'bi-chevron-down');
+
+            rows.sort(function (a, b) {
+                var av = a.dataset['sort' + key.charAt(0).toUpperCase() + key.slice(1)] || '';
+                var bv = b.dataset['sort' + key.charAt(0).toUpperCase() + key.slice(1)] || '';
+                var an = parseFloat(av), bn = parseFloat(bv);
+                var cmp = (!isNaN(an) && !isNaN(bn) && av !== '' && bv !== '')
+                    ? (an - bn)
+                    : av.localeCompare(bv);
+                return cmp * sortDir;
+            });
+            rows.forEach(function (row) { tbody.appendChild(row); });
+        });
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var filter = btn.dataset.filter;
+            var value  = btn.dataset.value;
+
+            document.querySelectorAll('.filter-btn[data-filter="' + filter + '"]').forEach(function (b) {
+                b.classList.remove('btn-dark');
+                b.classList.add('btn-outline-secondary');
+            });
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-dark');
+
+            if (filter === 'status')  activeStatus  = value;
+            if (filter === 'urgency') activeUrgency = value;
+
+            applyFilters();
+        });
+    });
+
+    searchInput.addEventListener('input', applyFilters);
+
+    function applyFilters() {
+        var search  = searchInput.value.trim().toLowerCase();
+        var visible = 0;
+
+        rows.forEach(function (row) {
+            if (!row.dataset.search) { return; }
+            var ok = (!search || row.dataset.search.includes(search))
+                  && (activeStatus  === 'all' || row.dataset.status  === activeStatus)
+                  && (activeUrgency === 'all' || row.dataset.urgency === activeUrgency);
+            row.style.display = ok ? '' : 'none';
+            if (ok) visible++;
+        });
+
+        visibleCount.textContent = visible;
+        emptyState.style.display = visible === 0 ? 'block' : 'none';
+    }
+})();
+</script>
+}

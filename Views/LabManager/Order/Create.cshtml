@@ -1,0 +1,108 @@
+﻿@model Project.Models.LabManager.Order
+@{
+    ViewData["Title"] = "Create Order";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Create Order</h2>
+    <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+@if (ViewBag.LowStockIds != null && ((List<int>)ViewBag.LowStockIds).Any())
+{
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        Items highlighted in <strong>amber</strong> are at or near reorder level. Consider ordering these.
+    </div>
+}
+
+<form asp-action="Create" method="post">
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <label class="form-label fw-semibold">Supplier <span class="text-danger">*</span></label>
+            <select name="supplierId" id="supplierSelect" class="form-select" style="max-width:360px" required>
+                <option value="">- Select Supplier -</option>
+                @foreach (var s in ViewBag.Suppliers)
+                {
+                    <option value="@s.Id">@s.Name</option>
+                }
+            </select>
+            <small class="text-muted d-block mt-1">Orders are placed per supplier - only that supplier's consumables are shown.</small>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <h5 class="mb-3">Consumables</h5>
+            <table class="table align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Consumable</th>
+                        <th>Current Stock</th>
+                        <th>Reorder Level</th>
+                        <th style="width:140px">Qty to Order</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in ViewBag.Consumables)
+                    {
+                        bool isLow = ViewBag.LowStockIds != null && ((List<int>)ViewBag.LowStockIds).Contains((int)c.Id);
+                        <tr class="consumable-row @(isLow ? "table-warning" : "")" data-supplier-id="@c.SupplierId" style="display:none">
+                            <td>
+                                <input type="hidden" name="consumableIds" value="@c.Id" />
+                                <strong>@c.Name</strong>
+                                @if (isLow)
+                                {
+                                    <span class="badge bg-warning text-dark ms-2">Low Stock</span>
+                                }
+                            </td>
+                            <td>@c.QuantityOnHand</td>
+                            <td>@c.ReorderLevel</td>
+                            <td>
+                                <input type="number" name="quantities" class="form-control form-control-sm qty-input"
+                                       value="0" min="0" />
+                            </td>
+                        </tr>
+                    }
+                    <tr id="noSupplierRow">
+                        <td colspan="4" class="text-center text-muted py-4">Select a supplier to see their consumables.</td>
+                    </tr>
+                    <tr id="noItemsRow" style="display:none">
+                        <td colspan="4" class="text-center text-muted py-4">This supplier has no active consumables.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-3 d-flex gap-2">
+        <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i>Submit Order</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        (function () {
+            var select = document.getElementById('supplierSelect');
+            var rows = document.querySelectorAll('.consumable-row');
+
+            function filterRows() {
+                var supplierId = select.value;
+                var shown = 0;
+                rows.forEach(function (row) {
+                    var match = supplierId !== '' && row.dataset.supplierId === supplierId;
+                    row.style.display = match ? '' : 'none';
+                    if (!match) row.querySelector('.qty-input').value = 0;
+                    if (match) shown++;
+                });
+                document.getElementById('noSupplierRow').style.display = supplierId === '' ? '' : 'none';
+                document.getElementById('noItemsRow').style.display = (supplierId !== '' && shown === 0) ? '' : 'none';
+            }
+
+            select.addEventListener('change', filterRows);
+            filterRows();
+        })();
+    </script>
+}

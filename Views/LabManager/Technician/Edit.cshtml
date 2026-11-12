@@ -1,0 +1,155 @@
+﻿@model Project.Models.LabManager.Technician
+@{
+    ViewData["Title"] = "Edit Technician";
+}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Edit Technician</h2>
+    <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+<div class="card shadow-sm border-0" style="max-width:640px">
+    <div class="card-body p-4">
+        <form asp-action="Edit" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Surname <span class="text-danger">*</span></label>
+                    <input asp-for="Surname" class="form-control" />
+                    <span asp-validation-for="Surname" class="text-danger small"></span>
+                </div>
+            </div>
+            @{
+                bool idLocked = ViewBag.IdLocked == true;
+            }
+            <div class="mb-3">
+                <label class="form-label fw-semibold">SA ID Number @if (!idLocked) {
+                <span class="text-danger">*</span>
+                                }
+</label>
+                @if (!idLocked)
+                {
+                    <input asp-for="IdNumber" class="form-control" placeholder="13-digit ID number"
+                           maxlength="13" inputmode="numeric" pattern="\d{13}"
+                           title="13 digits" />
+                    <span asp-validation-for="IdNumber" class="text-danger small"></span>
+                    <small class="text-muted d-block">No ID on record yet - capture it now. It cannot be changed afterwards.</small>
+                }
+                else
+                {
+                    <input asp-for="IdNumber" class="form-control" disabled />
+                    <small class="text-muted">ID number cannot be changed after creation.</small>
+                }
+            </div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+                    <input asp-for="Email" class="form-control" type="email" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Contact Number <span class="text-danger">*</span></label>
+                    <input asp-for="ContactNumber" class="form-control" />
+                    <span asp-validation-for="ContactNumber" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <!-- ✔ Test types grouped by category - matches Create.cshtml -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold">
+                    Assign Test Types <span class="text-danger">*</span>
+                    <small class="text-muted fw-normal">(at least one required)</small>
+                </label>
+
+                @if (ViewBag.Categories != null && ViewBag.TestTypes != null)
+                {
+                    var categories = (List<Project.Models.LabManager.TestCategory>)ViewBag.Categories;
+                    var testTypes = (List<Project.Models.LabManager.TestType>)ViewBag.TestTypes;
+                    var assignedIds = ViewBag.AssignedTestTypeIds != null
+                    ? (List<int>)ViewBag.AssignedTestTypeIds
+                    : new List<int>();
+                    var catsWithTypes = categories
+                    .Where(c => testTypes.Any(t => t.TestCategoryId == c.Id))
+                    .ToList();
+
+                    if (catsWithTypes.Any())
+                    {
+                        <div class="accordion" id="testTypeAccordion">
+                            @for (int i = 0; i < catsWithTypes.Count; i++)
+                            {
+                                var cat = catsWithTypes[i];
+                                var catTypes = testTypes.Where(t => t.TestCategoryId == cat.Id).ToList();
+                                var catHasAssigned = catTypes.Any(t => assignedIds.Contains(t.Id));
+                                var collapseId = $"collapse_{cat.Id}";
+                                var headingId = $"heading_{cat.Id}";
+                                var expand = i == 0 || catHasAssigned;
+
+                                <div class="accordion-item border mb-1 rounded">
+                                    <h2 class="accordion-header" id="@headingId">
+                                        <button class="accordion-button @(expand ? "" : "collapsed") py-2 px-3 fw-semibold"
+                                                type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#@collapseId"
+                                                aria-expanded="@(expand ? "true" : "false")"
+                                                aria-controls="@collapseId"
+                                                style="font-size:0.85rem">
+                                            <i class="bi bi-tags me-2 text-primary"></i>@cat.Name
+                                            <span class="badge bg-primary bg-opacity-10 text-primary ms-2" style="font-size:0.7rem">
+                                                @catTypes.Count type@(catTypes.Count != 1 ? "s" : "")
+                                            </span>
+                                        </button>
+                                    </h2>
+                                    <div id="@collapseId"
+                                         class="accordion-collapse collapse @(expand ? "show" : "")"
+                                         aria-labelledby="@headingId"
+                                         data-bs-parent="#testTypeAccordion">
+                                        <div class="accordion-body py-2 px-3">
+                                            @foreach (var tt in catTypes)
+                                            {
+                                                bool isAssigned = assignedIds.Contains(tt.Id);
+                                                <div class="form-check mb-1">
+                                                    <input type="checkbox"
+                                                           name="selectedTestTypes"
+                                                           value="@tt.Id"
+                                                           class="form-check-input"
+                                                           id="ett_@tt.Id"
+                                                           @(isAssigned ? "checked" : "") />
+                                                    <label class="form-check-label small" for="ett_@tt.Id">
+                                                        @tt.Name
+                                                        <span class="text-muted">(@tt.Units, @tt.TurnaroundTime min)</span>
+                                                    </label>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="card bg-light border-0 p-3">
+                            <p class="text-muted mb-0 small">No test types available. Add test types first.</p>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="card bg-light border-0 p-3">
+                        <p class="text-muted mb-0 small">No categories or test types available.</p>
+                    </div>
+                }
+
+                <span asp-validation-for="TechnicianTestTypes" class="text-danger small"></span>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-warning"><i class="bi bi-save me-1"></i>Save Changes</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

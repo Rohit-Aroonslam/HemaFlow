@@ -1,0 +1,100 @@
+﻿@model ErrorViewModel
+@{
+    Layout = null;
+
+    (string Title, string Message, string Icon, string Bg, string Fg) info = Model.StatusCode switch
+    {
+        404 => ("Page not found", "The page you're looking for doesn't exist, or may have moved.", "bi-signpost-split", "#dbeafe", "#1e40af"),
+        403 => ("Access denied", "You don't have permission to view this page.", "bi-shield-lock", "#fff7ed", "#ea580c"),
+        401 => ("Sign in required", "Please sign in to continue.", "bi-box-arrow-in-right", "#fff7ed", "#ea580c"),
+        400 => ("Bad request", "That request couldn't be understood. Please try again.", "bi-exclamation-circle", "#fee2e2", "#dc2626"),
+        _   => ("Something went wrong", "An unexpected error occurred. Please try again, or contact support if it keeps happening.", "bi-exclamation-triangle", "#fee2e2", "#dc2626"),
+    };
+
+    // Route the primary action by the signed-in user's role - same switch
+    // AccountController uses right after login. Unauthenticated -> Login.
+    string role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+    (string Controller, string Action) home = role switch
+    {
+        "SuperAdmin" or "Admin" => ("Admin", "Index"),
+        "Doctor"                => ("Doctor", "Index"),
+        "LabManager"            => ("Dashboard", "Index"),
+        "Technician"            => ("LabTech", "Dashboard"),
+        "Patient"               => ("Patient", "Index"),
+        _                       => ("Account", "Login"),
+    };
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@info.Title - Hema Flow</title>
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico" />
+    <link rel="stylesheet" href="~/lib/inter/inter.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        :root { --hema-navy: #0f172a; --hema-blue: #3b82f6; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            font-family: 'Inter', sans-serif; background: var(--hema-navy); color: #0f172a;
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 1.5rem;
+        }
+
+        /* Same brand lockup as every portal's sidebar (.lt-brand/.lt-brand-sub) -
+           this page carries no portal layout, but should still read as HemaFlow. */
+        .error-brand { font-size: 1.35rem; color: #fff; font-weight: 700; margin-bottom: 2rem; }
+        .error-brand-sub {
+            font-size: 0.62rem; font-weight: 500; letter-spacing: 0.09em; text-transform: uppercase;
+            color: rgba(255,255,255,0.4); display: block; margin-top: 0.15rem;
+        }
+
+        .error-card {
+            background: #f8fafc; max-width: 460px; width: 100%;
+            padding: 2.75rem 2.5rem; text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .error-icon-chip {
+            width: 40px; height: 40px; margin: 0 auto 1.25rem;
+            display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+        }
+        .error-eyebrow { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; margin-bottom: 0.4rem; }
+        .error-title { font-size: 1.35rem; font-weight: 600; margin-bottom: 0.6rem; }
+        .error-ref {
+            display: inline-block; font-size: 0.68rem; color: #94a3b8;
+            background: #f1f5f9; padding: 0.25rem 0.6rem; margin-bottom: 1.5rem;
+        }
+        .btn-square { border-radius: 0 !important; padding: 0.55rem 1.5rem; font-weight: 500; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="text-center">
+        <div class="error-brand">
+            Hema Flow
+            <span class="error-brand-sub">Nelson Mandela Bay Haematology</span>
+        </div>
+    </div>
+
+    <div class="error-card">
+        <div class="error-icon-chip" style="background:@info.Bg; color:@info.Fg;"><i class="bi @info.Icon"></i></div>
+        <p class="error-eyebrow">Error @Model.StatusCode</p>
+        <h1 class="error-title serif-brand">@info.Title</h1>
+        <p class="text-muted mb-3">@info.Message</p>
+
+        @if (Model.ShowRequestId)
+        {
+            <div><span class="error-ref">Ref: @Model.RequestId</span></div>
+        }
+
+        <div class="d-flex gap-2 justify-content-center flex-wrap">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-square">Go Back</a>
+            <a asp-controller="@home.Controller" asp-action="@home.Action" class="btn btn-dark btn-square">
+                @(string.IsNullOrEmpty(role) ? "Go to Login" : "Go to Dashboard")
+            </a>
+        </div>
+    </div>
+</body>
+</html>

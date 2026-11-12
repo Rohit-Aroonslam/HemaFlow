@@ -1,0 +1,189 @@
+@using Project.Models.LabManager
+@{
+    Layout = "_LabTechLayout";
+    ViewData["Title"] = "Verify Result";
+
+    var item     = (QueueItem)ViewBag.Item;
+    var testType = (Project.Models.LabManager.TestType)ViewBag.TestType;
+
+    string testName   = item.TestTypeName;
+    string reqNum     = item.RequestNumber.TrimStart('#');
+    string urgency    = item.Urgency;
+    string urgClass   = urgency == "STAT" ? "badge-stat" : urgency == "Urgent" ? "badge-urgent" : "badge-routine";
+    decimal? resultVal = item.ResultValue;
+    string units      = item.ResultUnits ?? testType?.Units ?? "";
+    decimal rangeMin  = testType?.NormalMin ?? 0;
+    decimal rangeMax  = testType?.NormalMax ?? 0;
+    string rangeStr   = $"{rangeMin} – {rangeMax}";
+    bool isAbnormal   = item.Flag == "Abnormal";
+    string capturedAt = item.CapturedAt?.ToString("dd MMM yyyy HH:mm") ?? "-";
+    string techNotes  = item.TechNotes ?? "";
+    string performedBy = item.CapturedBy ?? "-";
+
+    string returnTo   = (ViewBag.ReturnTo as string) ?? "Dashboard";
+    string backAction = returnTo == "VerificationHistory" ? "VerificationHistory" : "Dashboard";
+    string backLabel  = returnTo == "VerificationHistory" ? "Back to Verification History" : "Back to Dashboard";
+}
+
+@section Styles {
+<style>
+    .result-display {
+        text-align: center; padding: 1.25rem 1rem;
+        background: #f8fafc; margin-bottom: 1.25rem;
+    }
+    .result-value { font-size: 2.6rem; font-weight: 700; letter-spacing: -1px; line-height: 1; }
+    .result-units { font-size: 1rem; font-weight: 500; }
+    .result-range-hint { font-size: 0.72rem; color: #94a3b8; margin-top: 0.3rem; }
+
+    .result-summary {
+        background: #f8fafc; border: 1px solid #e2e8f0;
+        padding: 0.85rem 1rem; margin-bottom: 1.25rem;
+    }
+    .result-summary .rs-value { font-size: 1.65rem; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+    .result-summary .rs-units { font-size: 0.82rem; font-weight: 500; }
+
+</style>
+}
+
+<div class="mb-4">
+    <a asp-controller="LabTech" asp-action="@backAction" class="btn btn-sm btn-outline-secondary rounded-pill px-3 mb-3">
+        <i class="bi bi-arrow-left me-1"></i> @backLabel
+    </a>
+    <div class="d-flex justify-content-between align-items-center">
+        <h2 class="serif-brand mb-0">Verify Result - #@reqNum</h2>
+        @if (isAbnormal)
+        {
+            <span class="badge bg-danger-subtle text-danger rounded-pill px-4 py-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Abnormal</span>
+        }
+        else
+        {
+            <span class="badge bg-success-subtle text-success rounded-pill px-4 py-2"><i class="bi bi-check-circle-fill me-1"></i>Within Range</span>
+        }
+    </div>
+</div>
+
+<partial name="_PatientContext" model="item" />
+
+<!-- History trail - useful here since a verifier needs to see if this was returned before -->
+<div class="glass-card p-4 mb-4">
+    <h6 class="text-muted text-uppercase fw-bold small mb-3"><i class="bi bi-clock-history me-1"></i>Test History</h6>
+    <partial name="_HistoryTrail" model="item.History" />
+</div>
+
+<div class="row g-4">
+
+    <!-- Left: Result -->
+    <div class="col-md-5">
+
+        <div class="glass-card p-4">
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">Result to Verify</h6>
+
+            <div class="result-display">
+                <div class="result-value @(isAbnormal ? "text-danger" : "text-success")"
+                     title="@(isAbnormal ? $"Outside normal range ({rangeStr} {units})" : $"Within normal range ({rangeStr} {units})")">
+                    @resultVal <span class="result-units">@units</span>
+                </div>
+                <div class="result-range-hint">Normal range: @rangeStr @units</div>
+            </div>
+
+            <dl class="info-grid">
+                <dt>Test Type</dt>
+                <dd><strong>@testName</strong></dd>
+                <dt>Request #</dt>
+                <dd><strong>#@reqNum</strong></dd>
+                <dt>Urgency</dt>
+                <dd><span class="badge @urgClass rounded-pill px-3">@urgency</span></dd>
+                <dt>Performed By</dt>
+                <dd>@performedBy</dd>
+                <dt>Captured At</dt>
+                <dd>@capturedAt</dd>
+                <dt title="Notes recorded by the performing technician at time of capture.">Tech Notes</dt>
+                <dd class="small text-muted">@techNotes</dd>
+            </dl>
+        </div>
+
+    </div>
+
+    <!-- Right: Verification Decision -->
+    <div class="col-md-7">
+        <div class="glass-card p-4">
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">Verification Decision</h6>
+
+            <!-- Result summary strip -->
+            <div class="result-summary">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                    <div>
+                        <span class="fw-semibold small">@testName</span>
+                        <span class="badge @urgClass rounded-pill px-3 ms-2">@urgency</span>
+                    </div>
+                    <span class="text-muted small">Req. #@reqNum</span>
+                </div>
+                <div class="d-flex align-items-baseline gap-2 flex-wrap">
+                    <span class="rs-value @(isAbnormal ? "text-danger" : "text-success")">
+                        @resultVal <span class="rs-units">@units</span>
+                    </span>
+                    @if (isAbnormal)
+                    {
+                        <span class="badge bg-danger-subtle text-danger rounded-pill px-3">Abnormal</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success-subtle text-success rounded-pill px-3">Normal</span>
+                    }
+                    <span class="text-muted small ms-auto">@item.PatientName</span>
+                </div>
+                <div class="text-muted mt-1" style="font-size:0.7rem;">
+                    Performed by @performedBy &bull; @capturedAt
+                </div>
+            </div>
+
+            <form asp-controller="LabTech" asp-action="VerifyResult" method="post">
+                <input type="hidden" name="id" value="@item.Id" />
+                <input type="hidden" name="action" id="actionInput" />
+                <input type="hidden" name="returnTo" value="@returnTo" />
+
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-uppercase">
+                        Verification Note <span class="text-muted fw-normal">(required if returning)</span>
+                    </label>
+                    <textarea name="VerificationNote" id="verificationNote" class="form-control" rows="3"
+                              placeholder="Add a note for the technician…"></textarea>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end">
+                    <a asp-controller="LabTech" asp-action="@backAction" class="btn btn-outline-secondary rounded-pill px-4">
+                        Cancel
+                    </a>
+                    <button type="button" class="btn btn-outline-dark rounded-pill px-4" id="returnBtn" disabled
+                            data-confirm="Return this result to the technician for review?"
+                            data-confirm-target="actionInput" data-confirm-value="Return"
+                            title="Send this result back to the technician with your note for correction or re-analysis.">
+                        <i class="bi bi-arrow-return-left me-1"></i>Return for Review
+                    </button>
+                    <button type="button"
+                            class="btn btn-dark rounded-pill px-5"
+                            id="verifyBtn"
+                            data-confirm="Verify this result? It will be marked as verified."
+                            data-confirm-target="actionInput"
+                            data-confirm-value="Verify"
+                            title="Mark this result as verified.">
+                        <i class="bi bi-check-lg me-1"></i>Verify Result
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+<script>
+// Spec: results that are not verified are returned "with a note" -
+// Return stays disabled until a note has been entered.
+(function () {
+    var note = document.getElementById('verificationNote');
+    var ret  = document.getElementById('returnBtn');
+    note.addEventListener('input', function () { ret.disabled = note.value.trim() === ''; });
+})();
+</script>
+}

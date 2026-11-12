@@ -1,0 +1,101 @@
+@{
+    Layout = "_LabTechLayout";
+    ViewData["Title"] = "Select Test to Perform";
+
+    var technician = (Technician)ViewBag.CurrentTechnician;
+    var tests = (List<QueueItem>)ViewBag.Items;
+    var stock = (Dictionary<int, string>)ViewBag.StockStatus;
+
+    string UrgClass(string u) => u == "STAT" ? "badge-stat" : u == "Urgent" ? "badge-urgent" : "badge-routine";
+    string StockCls(string s) => s == "OutOfStock" ? "bg-danger-subtle text-danger" : s == "LowStock" ? "bg-warning-subtle text-warning" : "bg-success-subtle text-success";
+    string StockLabel(string s) => s == "OutOfStock" ? "Out of Stock" : s == "LowStock" ? "Low Stock" : "In Stock";
+    var bare = new ViewDataDictionary(ViewData) { ["Bare"] = true };
+}
+
+<div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+        <h2 class="serif-brand">Available Tests</h2>
+        <p class="text-muted mb-0">@tests.Count test@(tests.Count == 1 ? "" : "s") with samples received, for test types assigned to you, @technician.Name @technician.Surname.</p>
+    </div>
+</div>
+
+@if (!tests.Any())
+{
+    <div class="glass-card p-5 text-center text-muted">
+        <i class="bi bi-inbox fs-3 d-block mb-2 opacity-40"></i>
+        No received samples match a test type you're assigned to.
+    </div>
+}
+
+<div class="row g-3">
+    @foreach (var t in tests)
+    {
+        var cs = stock.GetValueOrDefault(t.TestTypeId, "OK");
+        bool blocked = cs == "OutOfStock";
+        var consumables = (t.TestType?.TestTypeConsumables ?? new List<TestTypeConsumable>())
+            .Select(l => new { Link = l, C = ((Dictionary<int, Project.Models.LabManager.Consumable>)ViewBag.ConsumableById).GetValueOrDefault(l.ConsumableId) })
+            .Where(x => x.C != null).ToList();
+        <div class="col-12 col-lg-6" id="test-@t.Id">
+            <div class="glass-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <div class="fw-semibold fs-6">@t.TestTypeName</div>
+                        <div class="text-muted small">Request @t.RequestNumber &middot; @t.CategoryName</div>
+                    </div>
+                    <span class="badge @UrgClass(t.Urgency) rounded-pill px-3">@t.Urgency</span>
+                </div>
+                <div class="d-flex flex-wrap gap-3 small text-muted mb-2">
+                    <span>Sample: <strong class="text-dark">@t.SampleTypeName</strong> (@t.TubeColour)</span>
+                    <span>Expected by: <strong class="text-dark">@t.DueAt?.ToString("HH:mm")</strong></span>
+                    <span class="@(t.IsOverdue ? "text-danger fw-semibold" : t.IsNearingTat ? "text-warning fw-semibold" : "")">@t.DueText</span>
+                </div>
+
+                <div class="mb-3">
+                    <span class="badge @StockCls(cs) rounded-pill px-3"
+                          title="@string.Join(", ", consumables.Select(x => $"{x.C!.Name}: {x.C.QuantityOnHand} on hand, {x.Link.QuantityRequired} needed"))">
+                        <i class="bi bi-box-seam me-1"></i>Consumables: @StockLabel(cs)
+                    </span>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3"
+                            data-bs-toggle="modal" data-bs-target="#modal-patient-@t.Id">
+                        <i class="bi bi-person-vcard me-1"></i>@t.PatientName
+                        @if (t.PatientAllergies.Any())
+                        {
+                            <i class="bi bi-exclamation-triangle-fill text-warning ms-1" title="Has recorded allergies"></i>
+                        }
+                    </button>
+                    <form asp-controller="LabTech" asp-action="SelectTest" method="post" class="confirm-form" data-message="Select this test? It will be assigned to you and its consumables deducted from stock.">
+                        <input type="hidden" name="testRequestItemId" value="@t.Id" />
+                        <button type="submit" class="btn btn-dark btn-sm rounded-pill px-4" @(blocked ? "disabled" : "")
+                                title="@(blocked ? "Required consumables are out of stock" : "")">
+                            <i class="bi bi-play-fill me-1"></i>Select &amp; Start
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        @* ── Patient factors that can influence the result - review before selecting ── *@
+        <div class="modal fade" id="modal-patient-@t.Id" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content" style="border-radius:0.75rem; border:1px solid #e1e1e1;">
+                    <div class="modal-header border-bottom" style="padding:1.5rem 1.75rem;">
+                        <div>
+                            <h6 class="modal-title fw-bold mb-1"><i class="bi bi-person-vcard me-2"></i>Patient Details</h6>
+                            <p class="text-muted small mb-0">Request @t.RequestNumber &middot; @t.TestTypeName &middot; conditions, allergies and medication can influence the result.</p>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" style="padding:1.25rem 1.75rem;">
+                        <partial name="_PatientContext" model="t" view-data="bare" />
+                    </div>
+                    <div class="modal-footer border-top" style="padding:1rem 1.75rem;">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

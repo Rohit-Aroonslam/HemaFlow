@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Doctor Portal | Hema Flow</title>
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico" />
+    <link rel="stylesheet" href="~/lib/inter/inter.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+			:root {
+			--hema-navy: #0f172a;
+			--hema-blue: #3b82f6;
+			--lt-w: 18vw;
+			}
+
+			body {
+			font-family: 'Inter', sans-serif;
+			background: #f8fafc;
+			color: #0f172a;
+			overflow-x: hidden;
+			}
+
+			.lt-sidebar {
+			position: fixed;
+			left: 0;
+			top: 0;
+			width: var(--lt-w);
+			height: 100vh;
+			background: var(--hema-navy);
+			display: flex;
+			flex-direction: column;
+			z-index: 200;
+			overflow-y: auto;
+			}
+
+			.lt-brand {
+			font-size: 1.35rem;
+			color: #fff;
+			font-weight: 700;
+			padding: 1.4rem 1.25rem 1rem;
+			border-bottom: 1px solid rgba(255,255,255,0.06);
+			flex-shrink: 0;
+			}
+
+			.lt-brand-sub {
+			font-size: 0.62rem;
+			font-weight: 500;
+			letter-spacing: 0.09em;
+			text-transform: uppercase;
+			color: rgba(255,255,255,0.3);
+			display: block;
+			margin-top: 0.2rem;
+			}
+
+			.lt-nav {
+			padding: 0.75rem 0;
+			flex: 1;
+			}
+
+			.lt-nav-section {
+			font-size: 0.58rem;
+			font-weight: 600;
+			letter-spacing: 0.1em;
+			text-transform: uppercase;
+			color: rgba(255,255,255,0.22);
+			padding: 0.9rem 1.25rem 0.3rem;
+			}
+
+			.lt-nav-link {
+			display: flex;
+			align-items: center;
+			gap: 0.7rem;
+			padding: 0.55rem 1.25rem;
+			color: rgba(255,255,255,0.6);
+			text-decoration: none;
+			font-size: 0.82rem;
+			font-weight: 500;
+			border-left: 3px solid transparent;
+			transition: all 0.15s;
+			}
+
+			.lt-nav-link:hover {
+			color: #fff;
+			background: rgba(255,255,255,0.05);
+			}
+
+			.lt-nav-link.active {
+			color: #fff;
+			background: rgba(59,130,246,0.14);
+			border-left-color: var(--hema-blue);
+			}
+
+			.lt-nav-link i {
+			font-size: 0.95rem;
+			width: 1rem;
+			text-align: center;
+			flex-shrink: 0;
+			}
+
+			.lt-sidebar-footer {
+			padding: 0.9rem 1.25rem;
+			border-top: 1px solid rgba(255,255,255,0.06);
+			font-size: 0.72rem;
+			color: rgba(255,255,255,0.35);
+			flex-shrink: 0;
+			}
+
+			.lt-sidebar-footer strong {
+			color: rgba(255,255,255,0.7);
+			display: block;
+			font-size: 0.78rem;
+			margin-bottom: 0.1rem;
+			}
+
+			/* Unified Main View Window */
+			.lt-main {
+			margin-left: var(--lt-w);
+			min-height: 100vh;
+			padding: 1.75rem 2rem 3rem;
+			}
+
+			/* 2. Global Section Standard (Matches Recent Tests & Chart Cards) */
+			.dash-section, .chart-card, .card {
+			background: #ffffff;
+			border: none !important; /* Forces all weird container borders out */
+			border-radius: 0 !important; /* Square corners - project-wide standard */
+			box-shadow: none !important; /* Removes generic card shadows */
+			margin-bottom: 1.5rem;
+			}
+
+			/* Standardized Section Headers */
+			.dash-section-header, .chart-card-header, .card-header {
+			background: #ffffff !important;
+			border-bottom: 1px solid #f1f5f9 !important; /* Premium hairline divider */
+			padding: 1rem 1.25rem !important;
+			display: flex;
+			align-items: center;
+			font-weight: 600;
+			font-size: 0.9rem;
+			color: #0f172a !important;
+			}
+
+			/* 3. Global Glass Card Clean-up (Removes the stubborn gray border completely) */
+			.glass-card {
+			background: rgba(255, 255, 255, 0.85);
+			backdrop-filter: blur(10px);
+			border: none !important; /* Strips the e1e1e1 border causing the issue */
+			border-radius: 0 !important; /* Square corners - project-wide standard */
+			box-shadow: 0 4px 30px rgba(0,0,0,0.03) !important;
+			}
+
+			/* 4. Unified Button Styles (Matches the Dashboard Action Rules) */
+			/* Primary / Dark Action Elements */
+			.btn-dark {
+			background: #0f172a !important;
+			border: 1px solid #0f172a !important;
+			border-radius: 0 !important; /* Square corners - project-wide standard */
+			font-size: 0.8rem !important;
+			font-weight: 600 !important;
+			padding: 0.55rem 1.25rem !important;
+			transition: all 0.15s ease;
+			}
+
+			.btn-dark:hover {
+			background: #1e293b !important;
+			border-color: #1e293b !important;
+			}
+
+			/* Outline / Secondary Action Elements */
+			.btn-outline-primary, .btn-outline-secondary, .btn-print, .btn-light {
+			background: #ffffff !important;
+			border: 1px solid #e2e8f0 !important;
+			color: #334155 !important;
+			border-radius: 0 !important; /* Square corners - project-wide standard */
+			font-size: 0.8rem !important;
+			font-weight: 600 !important;
+			padding: 0.55rem 1.25rem !important;
+			box-shadow: none !important;
+			}
+
+			.btn-outline-primary:hover, .btn-outline-secondary:hover {
+			background: #f8fafc !important;
+			color: #0f172a !important;
+			border-color: #cbd5e1 !important;
+			}
+
+			/* Status & Grid Badges */
+			.patient-status-pill {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.35rem;
+			padding: 0.25rem 0.6rem;
+			font-size: 0.72rem;
+			font-weight: 600;
+			border-radius: 0 !important; /* Square corners - project-wide standard */
+			border: 1px solid transparent;
+			}
+
+			/* Any remaining rounded elements (modals, badges, inputs) - flatten globally */
+			.modal-content, .badge, .rounded-pill, .rounded, .rounded-1, .rounded-2, .rounded-3, .rounded-4, .rounded-5,
+			.form-control, .form-select, .btn, .alert, .dropdown-menu, .list-group-item, .toast, .input-group-text, .nav-link, .page-link, .progress, .progress-bar {
+			border-radius: 0 !important;
+			}
+		.lt-nav-link.logout-link { color: rgba(255,100,100,0.85) !important; }
+.lt-nav-link.logout-link:hover { color: #ff6464 !important; background: rgba(255,100,100,0.08) !important; }
+
+		/* Compact sidebar so everything fits without scrolling; Log out sits at the bottom. */
+		.lt-brand { padding: 0.8rem 1.1rem 0.6rem !important; font-size: 1.2rem !important; }
+		.lt-nav { padding: 0.15rem 0 !important; min-height: 0; overflow-y: auto; }
+		.lt-nav-section { padding: 0.5rem 1.1rem 0.12rem !important; }
+		.lt-nav-link { padding: 0.34rem 1.1rem !important; font-size: 0.8rem !important; }
+		.lt-logout { flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.06); }
+		.lt-sidebar-footer { padding: 0.55rem 1.1rem !important; }
+</style>
+    <script src="~/js/hemaui.js" asp-append-version="true"></script>
+</head>
+<body>
+    @{
+        var _action = ViewContext.RouteData.Values["action"]?.ToString();
+    }
+
+    <aside class="lt-sidebar">
+        <div class="lt-brand">
+            Hema Flow
+            <span class="lt-brand-sub">Doctor Portal</span>
+        </div>
+
+        <nav class="lt-nav">
+            <div class="lt-nav-section">Overview</div>
+            <a asp-controller="Doctor" asp-action="Index"
+               class="lt-nav-link @(_action == "Index" ? "active" : "")">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+
+            <div class="lt-nav-section">Patients</div>
+            <a asp-controller="Doctor" asp-action="Patients"
+               class="lt-nav-link @(_action == "Patients" ? "active" : "")">
+                <i class="bi bi-people"></i> My Patients
+            </a>
+
+            <div class="lt-nav-section">Test Requests</div>
+            <a asp-controller="Doctor" asp-action="CreateTestRequest"
+               class="lt-nav-link @(_action == "CreateTestRequest" ? "active" : "")">
+                <i class="bi bi-plus-circle"></i> New Request
+            </a>
+            <a asp-controller="Doctor" asp-action="TrackRequests"
+               class="lt-nav-link @(_action == "TrackRequests" ? "active" : "")">
+                <i class="bi bi-list-check"></i> Track Requests
+            </a>
+
+            <div class="lt-nav-section">Results</div>
+            <a asp-controller="Doctor" asp-action="Alerts"
+               class="lt-nav-link @(_action == "Alerts" ? "active" : "")">
+                <i class="bi bi-exclamation-triangle"></i> Alerts
+            </a>
+
+            <div class="lt-nav-section">Reports</div>
+            <a asp-controller="Doctor" asp-action="Reports"
+               class="lt-nav-link @(_action == "Reports" ? "active" : "")">
+                <i class="bi bi-file-earmark-pdf"></i> My Reports
+            </a>
+
+            <div class="lt-nav-section">Account</div>
+            <a asp-controller="Doctor" asp-action="Profile"
+               class="lt-nav-link @((_action == "Profile" || _action == "Setup2FA") ? "active" : "")">
+                <i class="bi bi-person-circle"></i> My Profile
+            </a>
+
+        </nav>
+		<div class="lt-logout">
+            <a asp-controller="Account" asp-action="Logout" class="lt-nav-link logout-link"
+               data-confirm-link=""
+               data-confirm="You'll need to sign in again to access your account."
+               data-confirm-title="Log out?"
+               data-confirm-text="Logout">
+                <i class="bi bi-box-arrow-left"></i> Log out
+            </a>
+		</div>
+
+        <div class="lt-sidebar-footer">
+            <strong>Dr @(ViewBag.DoctorName ?? User.Identity?.Name)</strong>
+            Doctor Portal
+        </div>
+    </aside>
+
+    <main class="lt-main">
+        @if (TempData["Success"] != null) { <div data-toast="success">@TempData["Success"]</div> }
+        @if (TempData["Error"] != null) { <div data-toast="danger">@TempData["Error"]</div> }
+        @RenderBody()
+    </main>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/password-eye.js" asp-append-version="true"></script>
+    <script src="~/js/site.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

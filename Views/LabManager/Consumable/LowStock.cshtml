@@ -1,0 +1,32 @@
+﻿@* @model IEnumerable<Project.Models.LabManager.Consumable>
+
+<h2>Low Stock Alert (Reorder Detection)</h2>
+
+<p class="text-muted">
+    Items at or below 10% above reorder level
+</p>
+
+<table class="table table-bordered">
+    <thead class="table-dark">
+        <tr>
+            <th>Name</th>
+            <th>Stock</th>
+            <th>Reorder Level</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr class="table-danger">
+                <td>@item.Name</td>
+                <td>@item.QuantityOnHand</td>
+                <td>@item.ReorderLevel</td>
+                <td>
+                    🔴 REORDER REQUIRED
+                </td>
+            </tr>
+        }
+    </tbody>
+</table> *@

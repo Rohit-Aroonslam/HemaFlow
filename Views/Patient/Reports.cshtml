@@ -1,0 +1,230 @@
+@model Project.Models.ReportsViewModel
+@{
+    Layout = "_PatientLayout";
+    ViewData["Title"] = "Reports | Hema Flow";
+}
+
+<div class="row align-items-center mb-4 g-3">
+    <div class="col-md-8">
+        <h4 class="fw-700 mb-1" style="color: #0f172a;">My Reports</h4>
+        <p class="text-muted small mb-0">Generate and download PDF reports of your test results grouped by category.</p>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div data-toast="success" class="alert alert-success rounded-0 border-0 border-start border-3 border-success small mb-4">
+        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div data-toast="danger" class="alert alert-danger rounded-0 border-0 border-start border-3 border-danger small mb-4">
+        <i class="bi bi-exclamation-circle me-2"></i>@TempData["Error"]
+    </div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card mb-0 p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-2 bg-light border text-primary" style="font-size:1.2rem; line-height:1;">
+                    <i class="bi bi-clipboard2-data"></i>
+                </div>
+                <div>
+                    <div class="text-muted x-small text-uppercase fw-600" style="letter-spacing:0.05em;">Released Results</div>
+                    <div class="fw-700 text-dark" style="font-size:1.2rem;">@ViewBag.ReleasedResultCount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-0 p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-2 bg-light border text-success" style="font-size:1.2rem; line-height:1;">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                </div>
+                <div>
+                    <div class="text-muted x-small text-uppercase fw-600" style="letter-spacing:0.05em;">Reports Generated</div>
+                    <div class="fw-700 text-dark" style="font-size:1.2rem;">@Model.GeneratedReports.Count</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-0 p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-2 bg-light border text-warning" style="font-size:1.2rem; line-height:1;">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div>
+                    <div class="text-muted x-small text-uppercase fw-600" style="letter-spacing:0.05em;">Last Generated</div>
+                    <div class="fw-700 text-dark" style="font-size:1.2rem;">@(Model.GeneratedReports.Any() ? Model.GeneratedReports[0].GeneratedDate.ToString("d MMM yyyy") : "-")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    @* ── Generate Report Panel ── *@
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-file-earmark-pdf text-danger me-2"></i>Generate & Download Report
+            </div>
+            <div class="p-3">
+                <form asp-action="DownloadReport" asp-controller="Patient" method="post">
+                    @Html.AntiForgeryToken()
+
+                    @{ var catInfo = (List<Project.Models.ReportCategoryInfo>)ViewBag.CategoryInfo; }
+                    <div class="mb-3">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">What do you want in the report?</label>
+                        <select name="category" id="categorySelect" class="form-select bg-light border-0 rounded-0 shadow-none py-2 small">
+                            <option value="All">Everything (@ViewBag.ReleasedResultCount results)</option>
+                            @foreach (var c in catInfo)
+                            {
+                                <option value="@c.Category" data-first="@c.First" data-last="@c.Last">@c.Category (@c.Count)</option>
+                            }
+                        </select>
+                        <small class="text-muted d-block mt-1" style="font-size:0.68rem;">
+                            Only categories where you have released results are listed. The number is how many results you have.
+                        </small>
+                        <div id="categoryTests" class="mt-2 p-2 bg-light border-start border-3 border-primary small" style="display:none; font-size:0.72rem;"></div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Quick Range</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-secondary flex-fill quick-range-btn" data-days="30" style="font-size:0.72rem;">30 Days</button>
+                            <button type="button" class="btn btn-outline-secondary flex-fill quick-range-btn" data-days="90" style="font-size:0.72rem;">3 Months</button>
+                            <button type="button" class="btn btn-outline-secondary flex-fill quick-range-btn" data-days="365" style="font-size:0.72rem;">1 Year</button>
+                            <button type="button" class="btn btn-outline-secondary flex-fill quick-range-btn" data-days="all" style="font-size:0.72rem;">All</button>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-4">
+                        <div class="col-6">
+                            <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">From Date <span class="text-danger">*</span></label>
+                            <input type="date" name="fromDate" id="fromDateInput" max="@ViewBag.Today"
+                                   class="form-control bg-light border-0 rounded-0 shadow-none small py-2" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">To Date <span class="text-danger">*</span></label>
+                            <input type="date" name="toDate" id="toDateInput" max="@ViewBag.Today"
+                                   class="form-control bg-light border-0 rounded-0 shadow-none small py-2" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-dark w-100 py-2">
+                        <i class="bi bi-file-earmark-arrow-down me-2 text-danger"></i>Generate & Download PDF
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* ── Previously Generated Reports ── *@
+    <div class="col-lg-8">
+        <div class="card h-100 mb-0">
+            <div class="card-header justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-archive-fill text-primary"></i>
+                    <span>Previously Generated Reports</span>
+                </div>
+                <span class="text-muted x-small">@Model.GeneratedReports.Count report(s)</span>
+            </div>
+            <div class="p-0">
+                @if (!Model.GeneratedReports.Any())
+                {
+                    <div class="p-4 text-muted small">No reports have been generated yet.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="font-size:0.82rem;">
+                            <thead>
+                                <tr class="bg-light text-muted text-uppercase fw-600" style="font-size:0.68rem; border-bottom:1px solid #e2e8f0;">
+                                    <th class="ps-3 py-2">File Name</th>
+                                    <th class="py-2">Category</th>
+                                    <th class="py-2">Generated</th>
+                                    
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var report in Model.GeneratedReports)
+                                {
+                                    <tr style="border-bottom:1px solid #f1f5f9;">
+                                        <td class="ps-3 py-3">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-file-earmark-pdf text-danger"></i>
+                                                <span class="fw-600 text-dark" style="font-size:0.78rem;">@report.FileName</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="patient-status-pill text-primary border-primary bg-white" style="font-size:0.65rem;">
+                                                @report.Category
+                                            </span>
+                                        </td>
+                                        <td class="text-muted x-small">@report.GeneratedDate.ToString("d MMM yyyy HH:mm")</td>
+                                        
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var catInfo = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(((List<Project.Models.ReportCategoryInfo>)ViewBag.CategoryInfo)
+            .Select(c => new { category = c.Category, tests = c.Tests, first = c.First, last = c.Last })));
+        var firstResult = '@ViewBag.FirstResult';
+        var todayStr = '@ViewBag.Today';
+        var fromEl = document.getElementById('fromDateInput');
+        var toEl = document.getElementById('toDateInput');
+        var catEl = document.getElementById('categorySelect');
+        var testsBox = document.getElementById('categoryTests');
+
+        function markActive(btn) {
+            document.querySelectorAll('.quick-range-btn').forEach(function (b) {
+                b.classList.remove('btn-dark', 'active'); b.classList.add('btn-outline-secondary');
+            });
+            if (btn) { btn.classList.remove('btn-outline-secondary'); btn.classList.add('btn-dark', 'active'); }
+        }
+
+        // Sets the dates to cover the chosen category's results (or everything).
+        function fitDatesToData() {
+            var c = catInfo.find(function (x) { return x.category === catEl.value; });
+            testsBox.style.display = 'none';
+            if (c) {
+                testsBox.innerHTML = '<strong>Tests in this category:</strong><br>' + c.tests.join(', ');
+                testsBox.style.display = 'block';
+                fromEl.value = c.first; toEl.value = c.last > todayStr ? todayStr : c.last;
+            } else if (firstResult) {
+                fromEl.value = firstResult; toEl.value = todayStr;
+            }
+            markActive(null);
+        }
+        catEl.addEventListener('change', fitDatesToData);
+        fitDatesToData();
+
+        document.querySelectorAll('.quick-range-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var fmt = function (d) { return d.toISOString().split('T')[0]; };
+                if (this.dataset.days === 'all') {
+                    fitDatesToData();
+                } else {
+                    var from = new Date(); from.setDate(from.getDate() - parseInt(this.dataset.days, 10));
+                    fromEl.value = fmt(from); toEl.value = todayStr;
+                }
+                markActive(this);
+            });
+        });
+    </script>
+}

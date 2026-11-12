@@ -1,0 +1,42 @@
+﻿@model List<Project.Models.LabManager.SampleType>
+@{
+    ViewData["Title"] = "Archived Sample Types";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Archived Sample Types</h2>
+    <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th class="ps-4">Name</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var s in Model)
+                    {
+                        <tr>
+                            <td class="ps-4"><strong>@s.Name</strong></td>
+                            <td class="text-end pe-4">
+                                <a asp-action="Unarchive" asp-route-id="@s.Id" class="btn btn-success btn-sm">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="2" class="text-center text-muted py-4"><i class="bi bi-inbox fs-4 d-block mb-2"></i>No archived sample types.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

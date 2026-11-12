@@ -1,0 +1,325 @@
+@{
+    Layout = "_LabTechLayout";
+    ViewData["Title"] = "Receive Sample";
+
+    var items = (List<QueueItem>)ViewBag.Items;
+    var receivedBy = ViewBag.ReceivedBy as string ?? "";
+    var r = items[0];
+    string reqNum = r.RequestNumber.TrimStart('#');
+    string urgencyCls = r.Urgency == "STAT" ? "badge-stat" : r.Urgency == "Urgent" ? "badge-urgent" : "badge-routine";
+
+    // One physical sample = one barcode; several test types can share a sample.
+    var samples = items.GroupBy(i => i.Barcode).Select((g, n) => new
+    {
+        Num = n,
+        Barcode = g.Key,
+        Type = g.First().SampleTypeName,
+        Tube = g.First().TubeColour,
+        Tests = g.Select(i => i.TestTypeName).ToList()
+    }).ToList();
+}
+
+@section Styles {
+<style>
+    .tube-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; display: inline-block; background: #94a3b8; }
+    .tube-dot.purple { background: #8b5cf6; }
+    .tube-dot.blue   { background: #3b82f6; }
+    .tube-dot.gold   { background: #f59e0b; }
+
+    .card-done { background: rgba(240,253,244,0.92) !important; }
+
+    .bc-group { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+    .bc-text {
+        font-family: 'Courier New', monospace; font-size: 0.85rem;
+        font-weight: 700; color: #1e293b; letter-spacing: 0.04em;
+    }
+    .bc-input { font-family: 'Courier New', monospace; font-size: 0.82rem; width: 200px; padding: 0.2rem 0.5rem; }
+    .bc-btn {
+        border: none; background: none; cursor: pointer;
+        padding: 0.15rem 0.35rem; line-height: 1; color: #94a3b8;
+    }
+    .bc-btn:hover { background: #f1f5f9; }
+    .bc-btn.edit:hover   { color: #3b82f6; }
+    .bc-btn.save:hover   { color: #10b981; }
+    .bc-btn.cancel:hover { color: #ef4444; }
+    .bc-corrected { font-size: 0.7rem; color: #d97706; }
+
+    .rcv-time { font-size: 0.82rem; color: #475569; }
+    .rcv-time.done { color: #16a34a; font-weight: 600; }
+    .rcv-time.rejected { color: #dc2626; font-weight: 600; }
+    .card-rejected { background: rgba(254,242,242,0.92) !important; }
+</style>
+}
+
+<div class="mb-4">
+    <a asp-controller="LabTech" asp-action="SampleReceipt" class="btn btn-sm btn-outline-secondary rounded-pill px-3 mb-3">
+        <i class="bi bi-arrow-left me-1"></i> Back to Pending Requests
+    </a>
+    <div class="d-flex justify-content-between align-items-center">
+        <h2 class="serif-brand mb-0">Receive Sample - #@reqNum</h2>
+        <span class="badge @urgencyCls rounded-pill px-4 py-2">@r.Urgency</span>
+    </div>
+</div>
+
+<form asp-controller="LabTech" asp-action="ReceiveSample" method="post" id="receipt-form">
+<input type="hidden" name="requestNumber" value="@r.RequestNumber" />
+
+<div class="row g-4">
+
+    <!-- Request Details -->
+    <div class="col-md-4 col-lg-3">
+        <div class="glass-card p-4 h-100">
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">Request Details</h6>
+            <dl class="info-grid">
+                <dt>Request #</dt>
+                <dd><strong>#@reqNum</strong></dd>
+
+                <dt>Date</dt>
+                <dd>@r.RequestDate.ToString("dd MMM yyyy HH:mm")</dd>
+
+                <dt>Doctor</dt>
+                <dd>@r.DoctorName</dd>
+
+                <dt>Urgency</dt>
+                <dd><span class="badge @urgencyCls rounded-pill px-3">@r.Urgency</span></dd>
+
+                <dt>Received by</dt>
+                <dd>@receivedBy</dd>
+
+                <dt>Tests</dt>
+                <dd>
+                    <div class="d-flex flex-wrap gap-1">
+                        @foreach (var t in items)
+                        {
+                            <span class="badge bg-light text-dark border rounded-pill px-3">@t.TestTypeName</span>
+                        }
+                    </div>
+                </dd>
+
+                @if (!string.IsNullOrEmpty(r.ClinicalNotes))
+                {
+                    <dt>Clinical notes</dt>
+                    <dd class="text-muted small">@r.ClinicalNotes</dd>
+                }
+            </dl>
+        </div>
+    </div>
+
+    <!-- Sample Cards -->
+    <div class="col-md-8 col-lg-9">
+
+        <div class="d-flex justify-content-end align-items-center mb-3">
+            <div class="text-end small text-muted">
+                <span id="rcv-count" class="fw-semibold text-dark" style="font-size:1.1rem;">0</span>
+                / @samples.Count processed
+            </div>
+        </div>
+
+        <div class="d-flex flex-column gap-3">
+            @foreach (var s in samples)
+            {
+                string dotCls = s.Tube.StartsWith("Purple") ? "purple" : s.Tube.StartsWith("Blue") ? "blue" : s.Tube.StartsWith("Gold") ? "gold" : "";
+                <div class="glass-card p-4" id="card-@s.Num">
+                    <input type="hidden" name="samples[@s.Num].OriginalBarcode" value="@s.Barcode" />
+                    <input type="hidden" name="samples[@s.Num].Barcode" id="bc-val-@s.Num" value="@s.Barcode" />
+                    <input type="hidden" name="samples[@s.Num].Action" id="action-@s.Num" value="Receive" />
+                    <input type="hidden" name="samples[@s.Num].RejectReason" id="reason-val-@s.Num" value="" />
+
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="tube-dot @dotCls"></span>
+                            <span class="fw-semibold">@s.Type</span>
+                            <span class="text-muted small">&middot; @s.Tube</span>
+                        </div>
+                        <span class="badge bg-secondary rounded-pill px-3" id="status-@s.Num">Pending</span>
+                    </div>
+
+                    <dl class="info-grid mb-3">
+                        <dt>Barcode</dt>
+                        <dd>
+                            <div class="bc-group">
+                                <span class="bc-text" id="bc-disp-@s.Num">@s.Barcode</span>
+                                <button type="button" class="bc-btn edit" id="bc-edit-@s.Num" onclick="bcEdit(@s.Num)" title="Correct barcode">
+                                    <i class="bi bi-pencil" style="font-size:0.72rem;"></i>
+                                </button>
+                                <input type="text" class="bc-input form-control form-control-sm d-none" id="bc-inp-@s.Num" value="@s.Barcode" />
+                                <button type="button" class="bc-btn save d-none" id="bc-save-@s.Num" onclick="bcSave(@s.Num)" title="Save corrected barcode">
+                                    <i class="bi bi-check-lg" style="font-size:0.9rem;"></i>
+                                </button>
+                                <button type="button" class="bc-btn cancel d-none" id="bc-cancel-@s.Num" onclick="bcCancel(@s.Num)" title="Cancel edit">
+                                    <i class="bi bi-x-lg" style="font-size:0.75rem;"></i>
+                                </button>
+                                <span class="bc-corrected d-none" id="bc-note-@s.Num">corrected from @s.Barcode</span>
+                            </div>
+                        </dd>
+
+                        <dt>Sample type</dt>
+                        <dd>@s.Type</dd>
+
+                        <dt>Tests</dt>
+                        <dd>
+                            <div class="d-flex flex-wrap gap-1">
+                                @foreach (var test in s.Tests)
+                                {
+                                    <span class="badge bg-light text-dark border rounded-pill px-3">@test</span>
+                                }
+                            </div>
+                        </dd>
+
+                        <dt>Received at</dt>
+                        <dd><span class="rcv-time" id="rcv-time-@s.Num">-</span></dd>
+                    </dl>
+
+                    <div class="d-none mt-1 mb-3" id="rej-box-@s.Num">
+                        <label class="form-label small fw-bold text-uppercase mb-1">Reason for rejecting this sample</label>
+                        <textarea class="form-control form-control-sm mb-2" id="rej-reason-@s.Num" rows="2"
+                                  placeholder="e.g. sample clotted, insufficient volume, wrong tube type"></textarea>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="rejectCancel(@s.Num)">Cancel</button>
+                            <button type="button" class="btn btn-danger btn-sm rounded-pill px-3" onclick="rejectConfirm(@s.Num)">Confirm Reject</button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2" id="actions-@s.Num">
+                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-4" id="rej-btn-@s.Num" onclick="rejectToggle(@s.Num)">
+                            <i class="bi bi-x-circle me-1"></i>Reject
+                        </button>
+                        <button type="button" class="btn btn-dark btn-sm rounded-pill px-4" id="rcv-btn-@s.Num" onclick="receiveSample(@s.Num)">
+                            <i class="bi bi-droplet-fill me-1"></i>Receive
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="mt-4">
+            <div id="all-done-msg" class="small text-success mb-3 d-none">
+                <i class="bi bi-check-circle-fill me-1"></i>
+                All samples processed - complete the receipt to continue. Accepted samples move to
+                Samples Received; rejected ones are recorded with their reason and the doctor is notified.
+            </div>
+            <div class="d-flex gap-2 align-items-center justify-content-end">
+                <a asp-controller="LabTech" asp-action="SampleReceipt" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                <button type="submit" class="btn btn-dark rounded-pill px-5" id="submit-btn" disabled>
+                    <i class="bi bi-check-lg me-1"></i>Complete Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+</form>
+
+@section Scripts {
+<script>
+(function () {
+    var total = @samples.Count;
+    var done = {};
+    var doneCount = 0;
+
+    function el(id) { return document.getElementById(id); }
+    function show(id) { el(id).classList.remove('d-none'); }
+    function hide(id) { el(id).classList.add('d-none'); }
+
+    window.bcEdit = function (n) {
+        if (done[n]) return;
+        hide('bc-disp-' + n); hide('bc-edit-' + n);
+        show('bc-inp-' + n); show('bc-save-' + n); show('bc-cancel-' + n);
+        var inp = el('bc-inp-' + n);
+        inp.focus(); inp.select();
+    };
+
+    window.bcSave = function (n) {
+        var v = el('bc-inp-' + n).value.trim();
+        if (v) {
+            el('bc-disp-' + n).textContent = v;
+            el('bc-val-' + n).value = v;
+            var original = document.querySelector('input[name="samples[' + n + '].OriginalBarcode"]').value;
+            el('bc-note-' + n).classList.toggle('d-none', v === original);
+        }
+        bcCancel(n);
+    };
+
+    window.bcCancel = function (n) {
+        show('bc-disp-' + n); show('bc-edit-' + n);
+        hide('bc-inp-' + n); hide('bc-save-' + n); hide('bc-cancel-' + n);
+        el('bc-inp-' + n).value = el('bc-val-' + n).value;
+    };
+
+    window.receiveSample = function (n) {
+        if (done[n]) return;
+        bcCancel(n);
+
+        var t = el('rcv-time-' + n);
+        t.textContent = new Date().toLocaleString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        t.classList.add('done');
+
+        var st = el('status-' + n);
+        st.className = 'badge bg-success rounded-pill px-3';
+        st.textContent = 'Received';
+
+        var btn = el('rcv-btn-' + n);
+        btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Done';
+        btn.className = 'btn btn-success btn-sm rounded-pill px-4';
+        btn.disabled = true;
+        el('rej-btn-' + n).disabled = true;
+        hide('bc-edit-' + n);
+
+        el('card-' + n).classList.add('card-done');
+        done[n] = true;
+        doneCount++;
+        el('rcv-count').textContent = doneCount;
+
+        if (doneCount === total) {
+            el('submit-btn').disabled = false;
+            show('all-done-msg');
+        }
+    };
+
+    window.rejectToggle = function (n) {
+        if (done[n]) return;
+        show('rej-box-' + n);
+        el('rej-btn-' + n).disabled = true;
+        el('rcv-btn-' + n).disabled = true;
+        el('rej-reason-' + n).focus();
+    };
+
+    window.rejectCancel = function (n) {
+        hide('rej-box-' + n);
+        el('rej-btn-' + n).disabled = false;
+        el('rcv-btn-' + n).disabled = false;
+        el('rej-reason-' + n).value = '';
+    };
+
+    window.rejectConfirm = function (n) {
+        var reason = el('rej-reason-' + n).value.trim();
+        if (!reason) { el('rej-reason-' + n).focus(); return; }
+
+        el('action-' + n).value = 'Reject';
+        el('reason-val-' + n).value = reason;
+
+        var st = el('status-' + n);
+        st.className = 'badge bg-danger rounded-pill px-3';
+        st.textContent = 'Rejected';
+
+        var t = el('rcv-time-' + n);
+        t.textContent = 'Rejected: ' + reason;
+        t.classList.add('rejected');
+
+        hide('rej-box-' + n);
+        hide('bc-edit-' + n);
+        el('rcv-btn-' + n).disabled = true;
+        el('rej-btn-' + n).disabled = true;
+
+        el('card-' + n).classList.add('card-rejected');
+        done[n] = true;
+        doneCount++;
+        el('rcv-count').textContent = doneCount;
+
+        if (doneCount === total) {
+            el('submit-btn').disabled = false;
+            show('all-done-msg');
+        }
+    };
+})();
+</script>
+}

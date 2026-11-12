@@ -1,0 +1,923 @@
+@model Project.Models.MedicalProfileViewModel
+@{
+    Layout = "_PatientLayout";
+    ViewData["Title"] = "Medical Profile | Hema Flow";
+    var dobForInput = Model.DateOfBirth.ToString("yyyy-MM-dd");
+}
+
+<div class="row align-items-center mb-4 g-3">
+    <div class="col-md-8">
+        <h4 class="fw-700 mb-1" style="color: #0f172a;">My Medical Profile</h4>
+        <p class="text-muted small mb-0">Manage your personal details, medical history, and primary doctor.</p>
+    </div>
+    <div class="col-md-4 d-flex justify-content-md-end">
+        <button class="btn btn-outline-secondary" onclick="window.print()">
+            <i class="bi bi-printer me-2"></i>Print Summary
+        </button>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div data-toast="success" class="alert alert-success rounded-0 border-0 border-start border-3 border-success small mb-4" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div data-toast="danger" class="alert alert-danger rounded-0 border-0 border-start border-3 border-danger small mb-4" role="alert">
+        <i class="bi bi-exclamation-circle me-2"></i>@TempData["Error"]
+    </div>
+}
+
+@* ── Primary Doctor ── *@
+<div class="card p-3 mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="p-2 bg-light border text-primary" style="font-size: 1.4rem; line-height: 1;">
+                <i class="bi bi-person-workspace"></i>
+            </div>
+            <div>
+                <small class="text-uppercase text-muted fw-600 d-block mb-1" style="font-size: 0.65rem; letter-spacing: 0.04em;">Primary Doctors (@Model.PrimaryDoctors.Count)</small>
+                @if (Model.PrimaryDoctors.Any())
+                {
+                    foreach (var pd in Model.PrimaryDoctors)
+                    {
+                        var initials = string.Concat(pd.Name.Replace("Dr.", "").Replace("Dr ", "").Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => char.ToUpper(w[0])));
+                        <div class="d-flex align-items-center justify-content-between gap-3 mb-2 p-2 border bg-light">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="d-flex align-items-center justify-content-center fw-700 text-white flex-shrink-0" style="width:42px; height:42px; background:#0f172a; font-size:0.85rem;">@initials</div>
+                                <div>
+                                    <div class="fw-700 text-dark" style="font-size: 1rem; line-height:1.2;">@pd.Name</div>
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+                                        @if (!string.IsNullOrWhiteSpace(pd.Specialty))
+                                        {
+                                            <span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:600;">@pd.Specialty</span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(pd.Practice))
+                                        {
+                                            <span class="text-muted" style="font-size:0.75rem;"><i class="bi bi-building me-1"></i>@pd.Practice</span>
+                                        }
+                                        <span class="text-muted" style="font-size:0.75rem;">HPCSA <span class="text-dark fw-600 font-monospace">@pd.HpcsaNumber</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <form asp-action="RemovePrimaryDoctor" asp-controller="Patient" method="post" class="d-inline"
+                                  data-confirm="@pd.Name will no longer have full access to your results."
+                                  data-confirm-title="Remove @pd.Name?"
+                                  data-confirm-text="Remove">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="hpcsaNumber" value="@pd.HpcsaNumber" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2" title="Remove this primary doctor"><i class="bi bi-x-lg"></i></button>
+                            </form>
+                        </div>
+                    }
+                    <small class="text-success" style="font-size: 0.7rem;">
+                        <i class="bi bi-shield-check me-1"></i>Each primary doctor has full access to all your test results.
+                    </small>
+                }
+                else
+                {
+                    <div class="fw-600 text-muted">No primary doctors assigned</div>
+                    <small class="text-muted" style="font-size: 0.72rem;">Assign a primary doctor to automatically grant them full access to your results.</small>
+                }
+            </div>
+        </div>
+        <div>
+            <button class="btn btn-outline-primary px-3 text-nowrap" data-bs-toggle="modal" data-bs-target="#changeDoctorModal">
+                <i class="bi bi-person-plus me-1"></i>
+                @(Model.PrimaryDoctors.Any() ? "Add Another Doctor" : "Assign Doctor")
+            </button>
+        </div>
+    </div>
+</div>
+
+@* ── Role / Security badges strip ── *@
+<div class="card p-4 mb-4">
+    <div class="d-flex flex-wrap gap-2">
+        <span class="badge bg-light text-dark border px-3"><i class="bi bi-person-badge text-primary me-1"></i>System Role: Patient</span>
+        @if (Model.TwoFactorEnabled)
+        {
+            <span class="badge bg-light text-dark border px-3"><i class="bi bi-shield-check text-success me-1"></i>2FA Enabled</span>
+        }
+        else
+        {
+            <span class="badge bg-light text-dark border px-3"><i class="bi bi-shield-exclamation text-muted me-1"></i>2FA Not Set Up</span>
+        }
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+
+    <!-- Left: Personal info -->
+    <div class="col-md-6">
+        <div class="card p-4 h-100">
+            <h6 class="text-muted text-uppercase fw-bold small mb-3">Personal Information</h6>
+            <form asp-controller="Patient" asp-action="EditProfile" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-uppercase">First Name</label>
+                        <input type="text" name="FirstName" class="form-control" value="@Model.FirstName" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-uppercase">Surname</label>
+                        <input type="text" name="Surname" class="form-control" value="@Model.Surname" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase">SA ID Number</label>
+                    <div class="form-control bg-light border text-muted d-flex align-items-center gap-2">
+                        <i class="bi bi-lock-fill"></i>@Model.IdNumber
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase">Date of Birth</label>
+                    <div class="form-control bg-light border text-muted d-flex align-items-center gap-2">
+                        <i class="bi bi-lock-fill"></i>@Model.DateOfBirth.ToString("d MMMM yyyy")
+                    </div>
+                    <small class="text-muted d-block mt-1" style="font-size:0.7rem;">
+                        Date of birth is set at registration and can't be changed here. Contact an administrator if this is incorrect.
+                    </small>
+                    @* Kept as a disabled field (not submitted) purely so the layout doesn't shift; the
+                       server also ignores any DateOfBirth value posted from this form regardless. *@
+                    <input type="hidden" name="DateOfBirth" value="@dobForInput" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase">Email Address <span class="text-muted fw-normal" style="text-transform:none;">(your login username)</span></label>
+                    <input type="email" name="Email" class="form-control" value="@Model.Email" maxlength="256" required>
+                    <div class="form-text">If you change it, use the new address the next time you sign in.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase">Phone Number</label>
+                    <input type="text" name="Phone" class="form-control" value="@Model.Phone" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase">Complex / Building Name <span class="text-muted fw-normal text-lowercase">(optional)</span></label>
+                    <input type="text" name="ComplexName" class="form-control" value="@Model.ComplexName" maxlength="100" placeholder="e.g. Sunset Heights, Flat 4B">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase">House &amp; Street Address</label>
+                    <input type="text" name="AddressLine1" class="form-control" value="@Model.AddressLine1" required>
+                </div>
+
+                <partial name="_AddressPicker" model="new Project.Models.AddressPickerModel { SuburbId = Model.SuburbId, City = Model.City, Suburb = Model.Suburb, PostalCode = Model.PostalCode }" />
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-dark px-4">
+                        <i class="bi bi-check-lg me-1"></i>Save Changes
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Right: Security -->
+    <div class="col-md-6">
+
+        <!-- Password -->
+        <div class="card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted text-uppercase fw-bold small mb-1">Password</h6>
+                    <p class="text-muted small mb-0">Change the password used to sign in to your patient portal.</p>
+                </div>
+                <a asp-controller="Patient" asp-action="ChangePassword" class="btn btn-outline-primary text-nowrap">
+                    <i class="bi bi-key me-1"></i>Change Password
+                </a>
+            </div>
+        </div>
+
+        <!-- 2FA -->
+        <div class="card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="text-muted text-uppercase fw-bold small mb-0">Two-Factor Authentication</h6>
+                @if (Model.TwoFactorEnabled)
+                {
+                    <span class="badge bg-success-subtle text-success px-3"><i class="bi bi-check-circle-fill me-1"></i>Enabled</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary-subtle text-secondary px-3"><i class="bi bi-dash-circle me-1"></i>Not Enabled</span>
+                }
+            </div>
+
+            @if (Model.TwoFactorEnabled)
+            {
+                <div class="d-flex align-items-start gap-3 mb-3">
+                    <div style="width:40px;height:40px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem;">
+                        📱
+                    </div>
+                    <div>
+                        <div class="fw-medium small">Authenticator App</div>
+                        <div class="text-muted" style="font-size:0.72rem;">
+                            @Model.BackupCodesRemaining unused backup code@(Model.BackupCodesRemaining == 1 ? "" : "s") remaining<br>
+                            @if (Model.TwoFactorLastVerifiedOn.HasValue)
+                            {
+                                @:Last verified: @Model.TwoFactorLastVerifiedOn.Value.ToString("d MMM yyyy, HH:mm")
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <form asp-action="RegenerateBackupCodes" asp-controller="Patient" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-dark btn-sm px-3">
+                            <i class="bi bi-key me-1"></i>New Backup Codes
+                        </button>
+                    </form>
+                    <button type="button" class="btn btn-outline-danger btn-sm px-3" data-bs-toggle="modal" data-bs-target="#disable2FAModal">
+                        Disable 2FA
+                    </button>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small mb-3" style="font-size:0.78rem;">
+                    Add an extra layer of security - once enabled, you'll need a code from your authenticator app (Google Authenticator, Microsoft Authenticator, etc.) every time you sign in.
+                </p>
+                <a asp-controller="Patient" asp-action="Setup2FA" class="btn btn-dark btn-sm px-3">
+                    <i class="bi bi-shield-plus me-1"></i>Set Up 2FA
+                </a>
+            }
+        </div>
+
+
+    </div>
+</div>
+
+@* ── Medical History Cards ── *@
+<div class="row g-4">
+
+    @* Allergies *@
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header justify-content-between">
+                <span><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Allergies</span>
+                <button class="btn btn-sm btn-outline-secondary p-1 px-2" data-bs-toggle="modal" data-bs-target="#addAllergyModal">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+            </div>
+            <div class="p-3 d-flex flex-column gap-3">
+                @if (!Model.Allergies.Any() && !Model.PendingSubmissions.Any(p => p.Type == "Allergy"))
+                {
+                    <p class="text-muted small mb-0">No allergies recorded.</p>
+                }
+                @foreach (var pnd in Model.PendingSubmissions.Where(p => p.Type == "Allergy"))
+                {
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-600 text-dark small">@pnd.Name</div>
+                            <div class="x-small"><span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; font-weight:600;"><i class="bi bi-hourglass-split me-1"></i>Pending approval</span></div>
+                        </div>
+                    </div>
+                }
+                @foreach (var a in Model.Allergies)
+                {
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-600 text-dark small">@a.Name</div>
+                            <div class="text-muted x-small">@a.Category
+                                @if (!string.IsNullOrEmpty(a.Severity))
+                                {
+                                    var sevCls = a.Severity == "Life-threatening" ? "bg-danger text-white" : a.Severity == "Severe" ? "bg-danger-subtle text-danger-emphasis" : a.Severity == "Moderate" ? "bg-warning-subtle text-warning-emphasis" : "bg-success-subtle text-success-emphasis";
+                                    <span class="badge @sevCls ms-1">@a.Severity</span>
+                                }
+                            </div>
+                        </div>
+                        <form asp-action="RemoveAllergy" asp-controller="Patient" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="allergyName" value="@a.Name" />
+                            <button type="submit" class="btn btn-link p-0 text-muted opacity-50">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* Medications *@
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header justify-content-between">
+                <span><i class="bi bi-capsule text-primary me-2"></i>Medications</span>
+                <button class="btn btn-sm btn-outline-secondary p-1 px-2" data-bs-toggle="modal" data-bs-target="#addMedModal">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+            </div>
+            <div class="p-3 d-flex flex-column gap-3">
+                @if (!Model.Medications.Any() && !Model.PendingSubmissions.Any(p => p.Type == "Medication"))
+                {
+                    <p class="text-muted small mb-0">No medications recorded.</p>
+                }
+                @foreach (var pnd in Model.PendingSubmissions.Where(p => p.Type == "Medication"))
+                {
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-600 text-dark small">@pnd.Name</div>
+                            <div class="x-small"><span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; font-weight:600;"><i class="bi bi-hourglass-split me-1"></i>Pending approval</span></div>
+                        </div>
+                    </div>
+                }
+                @foreach (var m in Model.Medications)
+                {
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-600 text-dark small">@m.Name</div>
+                            <div class="text-muted x-small">
+                                @string.Join(" • ", new[] { m.Form, m.Dosage, m.Frequency }.Where(t => !string.IsNullOrWhiteSpace(t)))
+                            </div>
+                            @if (m.StartedOn.HasValue)
+                            {
+                                <div class="text-muted x-small"><i class="bi bi-calendar-event me-1"></i>Started @m.StartedOn.Value.ToString("dd MMM yyyy")</div>
+                            }
+                        </div>
+                        <form asp-action="RemoveMedication" asp-controller="Patient" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="medName" value="@m.Name" />
+                            <button type="submit" class="btn btn-link p-0 text-muted opacity-50">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* Chronic Conditions *@
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header justify-content-between">
+                <span><i class="bi bi-heart-pulse text-info me-2"></i>Chronic Conditions</span>
+                <button class="btn btn-sm btn-outline-secondary p-1 px-2" data-bs-toggle="modal" data-bs-target="#addConditionModal">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+            </div>
+            <div class="p-3 d-flex flex-column gap-3">
+                @if (!Model.Conditions.Any() && !Model.PendingSubmissions.Any(p => p.Type == "Condition"))
+                {
+                    <p class="text-muted small mb-0">No conditions recorded.</p>
+                }
+                @foreach (var pnd in Model.PendingSubmissions.Where(p => p.Type == "Condition"))
+                {
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-600 text-dark small">@pnd.Name</div>
+                            <div class="x-small"><span class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; font-weight:600;"><i class="bi bi-hourglass-split me-1"></i>Pending approval</span></div>
+                        </div>
+                    </div>
+                }
+                @foreach (var cd in Model.ConditionDetails)
+                {
+                    var c = cd.Name;
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-600 text-dark small">@c</div>
+                            @if (cd.DiagnosedOn.HasValue)
+                            {
+                                <div class="text-muted x-small"><i class="bi bi-calendar-event me-1"></i>Diagnosed @cd.DiagnosedOn.Value.ToString("dd MMM yyyy")</div>
+                            }
+                        </div>
+                        <form asp-action="RemoveCondition" asp-controller="Patient" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="conditionName" value="@c" />
+                            <button type="submit" class="btn btn-link p-0 text-muted opacity-50">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ══════════════ MODALS ══════════════ *@
+
+@* Change / Assign Primary Doctor - with live search *@
+<div class="modal fade" id="changeDoctorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 bg-white" style="border-radius:0;">
+            <div class="modal-header border-bottom px-4 py-3 justify-content-between">
+                <h6 class="fw-700 text-dark mb-0">
+                    <i class="bi bi-person-workspace text-primary me-2"></i>
+                    @(Model.PrimaryDoctors.Any() ? "Add Another Primary Doctor" : "Assign Primary Doctor")
+                </h6>
+                <button type="button" class="btn-close shadow-none small" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+
+                @* Search box *@
+                <div class="mb-3">
+                    <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Search by Doctor Name</label>
+                    <input type="text" id="doctorSearchInput"
+                           class="form-control bg-light border-0 rounded-0 shadow-none py-2 small"
+                           placeholder="Type a name, specialty or HPCSA number" autocomplete="off">
+                </div>
+
+                @* Search results area *@
+                <div id="doctorSearchResults" class="mb-3 d-flex flex-column gap-2" style="min-height: 40px;">
+                    <p class="text-muted x-small mb-0" id="searchHint">Start typing to search for a doctor.</p>
+                </div>
+
+                @* Confirm form - hidden until a doctor is selected *@
+                <form asp-action="SetPrimaryDoctor" asp-controller="Patient" method="post" id="confirmDoctorForm" style="display:none;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="hpcsaNumber" id="selectedHpcsa" />
+
+                    <div class="p-3 bg-light border-start border-3 border-primary mb-3" id="selectedDoctorPreview">
+                        <div class="fw-700 text-dark small" id="previewName"></div>
+                        <div class="text-muted x-small" id="previewDetails"></div>
+                        <small class="text-primary" style="font-size:0.68rem;">
+                            <i class="bi bi-shield-check me-1"></i>This doctor will get full access to all your results.
+                        </small>
+                    </div>
+
+                    @if (Model.PrimaryDoctors.Any())
+                    {
+                        <div class="p-2 bg-light border-start border-3 border-primary mb-3" style="font-size: 0.72rem;">
+                            <i class="bi bi-info-circle text-primary me-1"></i>
+                            This doctor will be added <strong>alongside</strong> your current primary doctor(s). You can remove any of them at any time.
+                        </div>
+                    }
+
+                    <div class="d-flex gap-2 justify-content-end pt-2 border-top">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-dark">Confirm</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Add Allergy *@
+<div class="modal fade" id="addAllergyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 bg-white" style="border-radius:0;">
+            <div class="modal-header border-bottom px-4 py-3 justify-content-between">
+                <h6 class="fw-700 text-dark mb-0"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Add Allergy</h6>
+                <button type="button" class="btn-close shadow-none small" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="addAllergyForm" asp-action="AddAllergy" asp-controller="Patient" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="allergyIsOther" name="isOther" value="false" />
+                    <input type="hidden" id="allergyName" name="allergyName" />
+
+                    <div class="mb-3">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Filter by Category</label>
+                        <select id="allergyCategoryFilter" name="suggestedCategory" class="form-select bg-light border-0 rounded-0 shadow-none py-2 small">
+                            <option value="">All Categories</option>
+                            @foreach (var cat in Model.AllergyCategories)
+                            {
+                                <option value="@cat.Name">@cat.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Allergy Name</label>
+                        <div class="position-relative">
+                            <input type="text" id="allergyNameSearch" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small" placeholder="Search for an allergy..." autocomplete="off">
+                            <div id="allergyDropdown" class="position-absolute w-100 bg-white border shadow-sm" style="z-index:999;top:100%;left:0;display:none;max-height:200px;overflow-y:auto;"></div>
+                        </div>
+                        <div id="allergyOtherNotice" class="text-muted x-small mt-1" style="display:none;">
+                            <i class="bi bi-info-circle me-1"></i>This will be submitted for admin review. Check back within 24 hours.
+                        </div>
+                    </div>
+                    <input type="hidden" id="allergyCategoryDisplay" />
+                    <div class="mb-4">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Severity</label>
+                        <select name="severity" class="form-select bg-light border-0 rounded-0 shadow-none py-2 small">
+                            <option value="">Not sure</option>
+                            <option>Mild</option>
+                            <option>Moderate</option>
+                            <option>Severe</option>
+                            <option>Life-threatening</option>
+                        </select>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end pt-2 border-top">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" id="allergySubmitBtn" class="btn btn-dark" disabled>Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Add Medication *@
+<div class="modal fade" id="addMedModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 bg-white" style="border-radius:0;">
+            <div class="modal-header border-bottom px-4 py-3 justify-content-between">
+                <h6 class="fw-700 text-dark mb-0"><i class="bi bi-capsule text-primary me-2"></i>Add Medication</h6>
+                <button type="button" class="btn-close shadow-none small" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="addMedForm" asp-action="AddMedication" asp-controller="Patient" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="medIsOther" name="isOther" value="false" />
+                    <input type="hidden" id="medName" name="medName" />
+
+                    <div class="mb-3">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Filter by Category</label>
+                        <select id="medCategoryFilter" name="suggestedCategory" class="form-select bg-light border-0 rounded-0 shadow-none py-2 small">
+                            <option value="">All Categories</option>
+                            @foreach (var cat in Model.MedicationCategories)
+                            {
+                                <option value="@cat.Name">@cat.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Medication Name</label>
+                        <div class="position-relative">
+                            <input type="text" id="medNameSearch" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small" placeholder="Search for a medication..." autocomplete="off">
+                            <div id="medDropdown" class="position-absolute w-100 bg-white border shadow-sm" style="z-index:999;top:100%;left:0;display:none;max-height:200px;overflow-y:auto;"></div>
+                        </div>
+                        <div id="medOtherNotice" class="text-muted x-small mt-1" style="display:none;">
+                            <i class="bi bi-info-circle me-1"></i>This will be submitted for admin review. Check back within 24 hours.
+                        </div>
+                    </div>
+                    <input type="hidden" id="medCategoryDisplay" />
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Strength</label>
+                            <input type="text" name="strength" maxlength="50" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small" placeholder="e.g. 500 mg">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Dose each time</label>
+                            <input type="text" name="dose" maxlength="50" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small" placeholder="e.g. 1 tablet">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Form</label>
+                            <select name="form" class="form-select bg-light border-0 rounded-0 shadow-none py-2 small">
+                                <option value="">Select...</option>
+                                <option>Tablet</option><option>Capsule</option><option>Syrup / liquid</option>
+                                <option>Injection</option><option>Inhaler</option><option>Cream / ointment</option>
+                                <option>Drops</option><option>Patch</option><option>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">How often</label>
+                            <select name="frequency" class="form-select bg-light border-0 rounded-0 shadow-none py-2 small">
+                                <option value="">Select...</option>
+                                <option>Once daily</option><option>Twice daily</option><option>Three times daily</option>
+                                <option>Four times daily</option><option>Every 8 hours</option><option>Weekly</option>
+                                <option>Monthly</option><option>As needed</option><option>Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Started taking it</label>
+                        <input type="date" name="startedOn" max="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small">
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end pt-2 border-top">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" id="medSubmitBtn" class="btn btn-dark" disabled>Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Add Chronic Condition *@
+<div class="modal fade" id="addConditionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 bg-white" style="border-radius:0;">
+            <div class="modal-header border-bottom px-4 py-3 justify-content-between">
+                <h6 class="fw-700 text-dark mb-0"><i class="bi bi-heart-pulse text-info me-2"></i>Add Chronic Condition</h6>
+                <button type="button" class="btn-close shadow-none small" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="addConditionForm" asp-action="AddCondition" asp-controller="Patient" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="conditionIsOther" name="isOther" value="false" />
+                    <input type="hidden" id="conditionName" name="conditionName" />
+
+                    <div class="mb-3">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Filter by Category</label>
+                        <select id="conditionCategoryFilter" name="suggestedCategory" class="form-select bg-light border-0 rounded-0 shadow-none py-2 small">
+                            <option value="">All Categories</option>
+                            @foreach (var cat in Model.ConditionCategories)
+                            {
+                                <option value="@cat.Name">@cat.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Condition Name</label>
+                        <div class="position-relative">
+                            <input type="text" id="conditionNameSearch" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small" placeholder="Search for a condition..." autocomplete="off">
+                            <div id="conditionDropdown" class="position-absolute w-100 bg-white border shadow-sm" style="z-index:999;top:100%;left:0;display:none;max-height:200px;overflow-y:auto;"></div>
+                        </div>
+                        <div id="conditionOtherNotice" class="text-muted x-small mt-1" style="display:none;">
+                            <i class="bi bi-info-circle me-1"></i>This will be submitted for admin review. Check back within 24 hours.
+                        </div>
+                    </div>
+                    <input type="hidden" id="conditionCategoryDisplay" />
+                    <div class="mb-4">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Date diagnosed</label>
+                        <input type="date" name="diagnosedOn" max="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small">
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end pt-2 border-top">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" id="conditionSubmitBtn" class="btn btn-dark" disabled>Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@* New Backup Codes Reveal Modal - pops automatically right after Setup2FAConfirm / RegenerateBackupCodes *@
+<div class="modal fade" id="newBackupCodesModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius:0; border:1px solid #e1e1e1;">
+            <div class="modal-header border-bottom" style="padding:1.5rem 1.75rem;">
+                <div>
+                    <h6 class="modal-title fw-bold mb-1"><i class="bi bi-key-fill me-2"></i>Save Your Backup Codes</h6>
+                    <p class="text-muted small mb-0">Each code works only once. Store them somewhere safe - this is the only time they'll be shown.</p>
+                </div>
+            </div>
+            <div class="modal-body" style="padding:1.75rem;">
+                <div class="row g-2 mb-3" id="newBackupCodesList"></div>
+            </div>
+            <div class="modal-footer border-top" style="padding:1rem 1.75rem;">
+                <button type="button" class="btn btn-outline-dark px-4" id="copyNewBackupCodesBtn">
+                    <i class="bi bi-clipboard me-1"></i>Copy All
+                </button>
+                <button type="button" class="btn btn-dark px-4" data-bs-dismiss="modal">I've Saved Them</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Disable 2FA Modal *@
+<div class="modal fade" id="disable2FAModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="border-radius:0; border:1px solid #e1e1e1;">
+            <div class="modal-body p-4">
+                <div class="text-center mb-3">
+                    <i class="bi bi-shield-exclamation text-danger" style="font-size:2rem;"></i>
+                </div>
+                <p class="fw-semibold mb-1 text-center">Disable Two-Factor Authentication?</p>
+                <p class="text-muted small text-center mb-3">
+                    This will reduce the security of your account. Enter your password to confirm.
+                </p>
+                <form asp-action="DisableTwoFactor" asp-controller="Patient" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="password" name="password" class="form-control mb-3" placeholder="Enter your password to confirm" required>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-dark btn-sm flex-grow-1" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger btn-sm flex-grow-1">Disable</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* JSON data for patient-side pickers - sourced from the real, admin-managed master lists *@
+<script>
+    var hfAllergies = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                Model.AvailableAllergies.Select(a => new { name = a.Name, category = a.Category })));
+    var hfMedications = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                Model.AvailableMedications.Select(m => new { name = m.Name, category = m.Category })));
+    var hfConditions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                Model.AvailableConditions.Select(c => new { name = c.Name, category = c.Category })));
+    var newBackupCodesRaw = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["NewBackupCodes"] as string ?? ""));
+</script>
+
+@section Scripts {
+    <script>
+        // ── Show newly generated backup codes exactly once, right after they're created ──
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!newBackupCodesRaw) return;
+            var codes = newBackupCodesRaw.split(',').filter(Boolean);
+            if (!codes.length) return;
+
+            var list = document.getElementById('newBackupCodesList');
+            codes.forEach(function (code) {
+                var col = document.createElement('div');
+                col.className = 'col-6 col-md-4';
+                col.innerHTML = '<div style="font-family:\'Courier New\',monospace; font-size:0.88rem; font-weight:700;' +
+                    'background:#f8fafc; border:1px solid #e2e8f0; padding:0.55rem 0.75rem;' +
+                    'text-align:center; letter-spacing:0.08em;">' + code + '</div>';
+                list.appendChild(col);
+            });
+
+            document.getElementById('copyNewBackupCodesBtn').addEventListener('click', function () {
+                navigator.clipboard.writeText(codes.join('\n')).then(function () {
+                    var btn = document.getElementById('copyNewBackupCodesBtn');
+                    btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Copied';
+                    setTimeout(function () { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy All'; }, 2000);
+                });
+            });
+
+            new bootstrap.Modal(document.getElementById('newBackupCodesModal')).show();
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // ── Doctor search ──────────────────────────────────────────────────────────
+            const searchInput   = document.getElementById('doctorSearchInput');
+            const resultsBox    = document.getElementById('doctorSearchResults');
+            const confirmForm   = document.getElementById('confirmDoctorForm');
+            const selectedHpcsa = document.getElementById('selectedHpcsa');
+            const previewName   = document.getElementById('previewName');
+            const previewDetails= document.getElementById('previewDetails');
+
+            let searchTimer = null;
+            function esc(t) { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; }
+
+            // Asks the server for doctors matching the box and draws a card for each.
+            function runSearch() {
+                const q = searchInput.value.trim();
+                fetch('@Url.Action("SearchDoctors", "Patient")?q=' + encodeURIComponent(q), { credentials: 'same-origin' })
+                    .then(r => r.json())
+                    .then(function (matches) {
+                        resultsBox.innerHTML = '';
+                        confirmForm.style.display = 'none';
+                        if (!matches.length) {
+                            resultsBox.innerHTML = '<p class="text-muted x-small mb-0">No doctors found. Try a different name or HPCSA number.</p>';
+                            return;
+                        }
+                        matches.forEach(function (doc) {
+                            const card = document.createElement('div');
+                            card.className = 'p-2 border bg-light d-flex justify-content-between align-items-center';
+                            card.style.cursor = 'pointer';
+                            card.innerHTML =
+                                '<div>' +
+                                    '<div class="fw-600 text-dark small">' + esc(doc.name) + '</div>' +
+                                    '<div class="text-muted x-small">' + esc(doc.specialty || 'General') + '</div>' +
+                                    '<div class="text-muted x-small">HPCSA: ' + esc(doc.hpcsaNumber) + '</div>' +
+                                '</div>' +
+                                '<i class="bi bi-chevron-right text-muted small"></i>';
+                            card.addEventListener('click', function () {
+                                selectedHpcsa.value = doc.hpcsaNumber;
+                                previewName.textContent = doc.name;
+                                previewDetails.textContent = (doc.specialty || 'General') + ' (HPCSA: ' + doc.hpcsaNumber + ')';
+                                confirmForm.style.display = 'block';
+                                resultsBox.innerHTML = '';
+                                searchInput.value = doc.name;
+                            });
+                            resultsBox.appendChild(card);
+                        });
+                    })
+                    .catch(function () {
+                        resultsBox.innerHTML = '<p class="text-danger x-small mb-0">Could not load doctors. Please try again.</p>';
+                    });
+            }
+
+            // Results update as you type (short delay so we do not call the server on every key).
+            searchInput.addEventListener('input', function () {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(runSearch, 200);
+            });
+            // Show the full list as soon as the box opens.
+            document.getElementById('changeDoctorModal').addEventListener('shown.bs.modal', runSearch);
+
+            document.getElementById('changeDoctorModal').addEventListener('hidden.bs.modal', function () {
+                searchInput.value = '';
+                resultsBox.innerHTML = '';
+                confirmForm.style.display = 'none';
+            });
+        });
+
+        // ── Setup the three real-data pickers ──────────────────────────────
+        setupPicker({
+            searchId: 'allergyNameSearch', dropId: 'allergyDropdown', catFilterId: 'allergyCategoryFilter',
+            hiddenNameId: 'allergyName', hiddenOtherId: 'allergyIsOther',
+            catDisplayId: 'allergyCategoryDisplay', otherNoticeId: 'allergyOtherNotice',
+            submitBtnId: 'allergySubmitBtn', data: hfAllergies
+        });
+        setupPicker({
+            searchId: 'medNameSearch', dropId: 'medDropdown', catFilterId: 'medCategoryFilter',
+            hiddenNameId: 'medName', hiddenOtherId: 'medIsOther',
+            catDisplayId: 'medCategoryDisplay', otherNoticeId: 'medOtherNotice',
+            submitBtnId: 'medSubmitBtn', data: hfMedications
+        });
+        setupPicker({
+            searchId: 'conditionNameSearch', dropId: 'conditionDropdown', catFilterId: 'conditionCategoryFilter',
+            hiddenNameId: 'conditionName', hiddenOtherId: 'conditionIsOther',
+            catDisplayId: 'conditionCategoryDisplay', otherNoticeId: 'conditionOtherNotice',
+            submitBtnId: 'conditionSubmitBtn', data: hfConditions
+        });
+
+        function setupPicker(opts) {
+            const search      = document.getElementById(opts.searchId);
+            const drop        = document.getElementById(opts.dropId);
+            const catFilter   = document.getElementById(opts.catFilterId);
+            const hiddenName  = document.getElementById(opts.hiddenNameId);
+            const hiddenOther = document.getElementById(opts.hiddenOtherId);
+            const catDisplay  = document.getElementById(opts.catDisplayId);
+            const otherNotice = document.getElementById(opts.otherNoticeId);
+            const submitBtn   = document.getElementById(opts.submitBtnId);
+            if (!search || !drop) return;
+
+            function clearSelection() {
+                hiddenName.value = '';
+                hiddenOther.value = 'false';
+                catDisplay.value = '';
+                catDisplay.placeholder = 'Select a name above first';
+                otherNotice.style.display = 'none';
+                submitBtn.disabled = true;
+            }
+
+            function selectReal(item) {
+                hiddenName.value = item.name;
+                hiddenOther.value = 'false';
+                search.value = item.name;
+                catDisplay.value = item.category;
+                otherNotice.style.display = 'none';
+                submitBtn.disabled = false;
+                drop.style.display = 'none';
+            }
+
+            function selectOther(name) {
+                hiddenName.value = name;
+                hiddenOther.value = 'true';
+                catDisplay.value = '';
+                catDisplay.placeholder = 'Will be assigned by admin on approval';
+                otherNotice.style.display = 'block';
+                submitBtn.disabled = false;
+                drop.style.display = 'none';
+            }
+
+            search.addEventListener('input', function () {
+                clearSelection();
+                const q = this.value.trim().toLowerCase();
+                const catVal = catFilter ? catFilter.value : '';
+                drop.innerHTML = '';
+
+                if (q.length < 1) { drop.style.display = 'none'; return; }
+
+                const matches = opts.data.filter(function (d) {
+                    return d.name.toLowerCase().includes(q) && (!catVal || d.category === catVal);
+                });
+
+                matches.slice(0, 8).forEach(function (item) {
+                    const el = document.createElement('div');
+                    el.className = 'px-3 py-2 border-bottom';
+                    el.style.cssText = 'cursor:pointer;font-size:0.82rem;';
+                    el.innerHTML = '<div class="fw-600 text-dark">' + item.name + '</div>' +
+                        '<div class="text-muted" style="font-size:0.7rem;">' + item.category + '</div>';
+                    el.addEventListener('mouseenter', function () { this.style.background = '#f8fafc'; });
+                    el.addEventListener('mouseleave', function () { this.style.background = ''; });
+                    el.addEventListener('click', function () { selectReal(item); });
+                    drop.appendChild(el);
+                });
+
+                // "Other" fallback - always offered so the patient isn't stuck if their
+                // exact term isn't on the list yet.
+                const otherEl = document.createElement('div');
+                otherEl.className = 'px-3 py-2 bg-light';
+                otherEl.style.cssText = 'cursor:pointer;font-size:0.8rem;';
+                otherEl.innerHTML = '<i class="bi bi-plus-circle me-1 text-primary"></i>Add "' +
+                    this.value.trim() + '" as Other <span class="text-muted">(needs admin approval)</span>';
+                otherEl.addEventListener('mouseenter', function () { this.style.background = '#f1f5f9'; });
+                otherEl.addEventListener('mouseleave', function () { this.style.background = '#f8fafc'; });
+                otherEl.addEventListener('click', function () { selectOther(search.value.trim()); });
+                drop.appendChild(otherEl);
+
+                drop.style.display = 'block';
+            });
+
+            if (catFilter) {
+                catFilter.addEventListener('change', function () {
+                    clearSelection();
+                    search.value = '';
+                    drop.style.display = 'none';
+                });
+            }
+
+            document.addEventListener('click', function (e) {
+                if (!search.contains(e.target) && !drop.contains(e.target))
+                    drop.style.display = 'none';
+            });
+
+            clearSelection();
+        }
+    </script>
+}

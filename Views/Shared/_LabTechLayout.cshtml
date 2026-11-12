@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Lab Technician | Hema Flow</title>
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico" />
+    <link rel="stylesheet" href="~/lib/inter/inter.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+    <style>
+        :root {
+            --hema-navy: #0f172a;
+            --hema-blue: #3b82f6;
+            --lt-w: 18vw;
+        }
+        html, body { height: 100%; overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; background: var(--hema-navy); color: #0f172a; }
+
+        /* ── Sidebar ── */
+        .lt-sidebar {
+            position: fixed; left: 0; top: 0;
+            width: var(--lt-w); height: 100vh;
+            background: var(--hema-navy);
+            display: flex; flex-direction: column;
+            z-index: 200;
+            overflow-y: auto; overflow-x: hidden;
+        }
+        .lt-brand {
+            font-size: 1.35rem; color: #fff; font-weight: 700;
+            padding: 1.4rem 1.25rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            flex-shrink: 0;
+        }
+        .lt-brand-sub {
+            font-size: 0.62rem; font-weight: 500;
+            letter-spacing: 0.09em; text-transform: uppercase;
+            color: rgba(255,255,255,0.3); display: block; margin-top: 0.2rem;
+        }
+        .lt-nav { padding: 0.75rem 0.65rem; flex: 1; overflow-y: auto; overflow-x: hidden; }
+        .lt-nav-section {
+            font-size: 0.58rem; font-weight: 700;
+            letter-spacing: 0.12em; text-transform: uppercase;
+            color: rgba(255,255,255,0.28);
+            padding: 0.75rem 0.5rem 0.3rem;
+        }
+        .lt-nav-link {
+            display: flex; align-items: center; gap: 0.65rem;
+            padding: 0.48rem 0.65rem;
+            margin-bottom: 0.1rem;
+            color: rgba(255,255,255,0.62);
+            text-decoration: none; font-size: 0.8rem; font-weight: 500;
+            border-left: 3px solid transparent;
+            transition: background 0.15s, color 0.15s, transform 0.15s;
+        }
+        .lt-nav-link:hover { color: #fff; background: rgba(255,255,255,0.06); transform: translateX(2px); }
+        .lt-nav-link.active {
+            color: #fff; font-weight: 600;
+            background: rgba(59,130,246,0.16);
+            border-left-color: var(--hema-blue);
+        }
+        .lt-nav-link i {
+            font-size: 0.88rem; width: 1.55rem; height: 1.55rem; flex-shrink: 0;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7);
+            transition: background 0.15s, color 0.15s;
+        }
+        .lt-nav-link:hover i { background: rgba(255,255,255,0.12); color: #fff; }
+        .lt-nav-link.active i { background: var(--hema-blue); color: #fff; }
+        .lt-nav-link.logout-link { color: rgba(255,100,100,0.85); }
+        .lt-nav-link.logout-link i { background: rgba(255,100,100,0.1); color: rgba(255,100,100,0.85); }
+        .lt-nav-link.logout-link:hover { color: #ff6464; background: rgba(255,100,100,0.08); transform: translateX(2px); }
+        .lt-nav-link.logout-link:hover i { background: rgba(255,100,100,0.18); color: #ff6464; }
+        .lt-sidebar-footer {
+            padding: 0.9rem 1.25rem;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            font-size: 0.72rem; color: rgba(255,255,255,0.35); flex-shrink: 0;
+        }
+        .lt-sidebar-footer strong { color: rgba(255,255,255,0.7); display: block; font-size: 0.78rem; margin-bottom: 0.1rem; }
+
+        /* ── Main: content floats as its own card on the navy canvas,
+           matching the sidebar's colour, with a gutter framing it. The
+           page itself never scrolls - .lt-main is a fixed-height frame
+           and .lt-content-card is the only scrollable region. ── */
+        .lt-main {
+            margin-left: var(--lt-w); height: 100vh; padding: 0.75rem;
+            box-sizing: border-box; overflow: hidden;
+        }
+        .lt-content-card {
+            height: 100%; box-sizing: border-box;
+            background: #f8fafc;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            padding: 1.75rem 2rem 3rem;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        .lt-content-card::-webkit-scrollbar { width: 8px; }
+        .lt-content-card::-webkit-scrollbar-track { background: transparent; }
+        .lt-content-card::-webkit-scrollbar-thumb { background: #cbd5e1; border: 2px solid transparent; background-clip: content-box; }
+        .lt-content-card::-webkit-scrollbar-thumb:hover { background: #94a3b8; background-clip: content-box; }
+
+        /* ── Page Header ── */
+        .page-header {
+            display: flex; align-items: flex-start;
+            justify-content: space-between; margin-bottom: 1.5rem;
+        }
+        .page-header h2 { font-size: 1.35rem; font-weight: 600; margin: 0; }
+        .page-sub { font-size: 0.78rem; color: #64748b; margin-top: 0.2rem; }
+
+        /* ── Back link ── */
+        .back-link {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            color: #64748b; text-decoration: none;
+            font-size: 0.82rem; margin-bottom: 1.25rem;
+        }
+        .back-link:hover { color: var(--hema-blue); }
+
+        /* ── Glass card (matches Patient / Admin) ── */
+        .glass-card {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid #e1e1e1;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.05);
+        }
+
+        /* ── Loading overlay: feedback during the server round-trip on
+           navigation/form submit - this app's pages are genuinely slow
+           sometimes (remote campus DB), so this isn't decorative. Sits over
+           the content card only - the sidebar stays fully interactive. ── */
+        #pageLoadingBar {
+            position: fixed;
+            top: 0.75rem; bottom: 0.75rem;
+            left: calc(var(--lt-w) + 0.75rem); right: 0.75rem;
+            background: rgba(248,250,252,0.72);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1030; opacity: 0; pointer-events: none; /* below Bootstrap's modal (1055) and backdrop (1050) - never blocks a dialog */
+            transition: opacity 0.15s ease;
+        }
+        #pageLoadingBar.active { opacity: 1; pointer-events: auto; }
+
+        /* ── Bars ("pipes") spinner - reused for page loads and lazy content ── */
+        .loading-bars { display: inline-flex; align-items: center; gap: 5px; height: 28px; }
+        .loading-bars span {
+            width: 5px; height: 100%; background: var(--hema-blue);
+            animation: barPulse 0.9s ease-in-out infinite;
+        }
+        .loading-bars span:nth-child(1) { animation-delay: 0s; }
+        .loading-bars span:nth-child(2) { animation-delay: 0.1s; }
+        .loading-bars span:nth-child(3) { animation-delay: 0.2s; }
+        .loading-bars span:nth-child(4) { animation-delay: 0.3s; }
+        .loading-bars span:nth-child(5) { animation-delay: 0.4s; }
+        @@keyframes barPulse { 0%, 40%, 100% { transform: scaleY(0.35); } 20% { transform: scaleY(1); } }
+        .loading-bars.sm { height: 20px; gap: 4px; }
+        .loading-bars.sm span { width: 4px; }
+
+        /* ── Lazy content placeholder (trail modals etc.) ── */
+        .lazy-loading { display: flex; align-items: center; justify-content: center; padding: 2rem 0; }
+
+        /* ── Square corners, project-wide standard (matches Patient & Admin exactly) ── */
+        .glass-card, .card, .bento-card, .dashboard-stat-card, .kpi-card {
+            border-radius: 0 !important;
+        }
+        .btn, .btn-sm {
+            border-radius: 0 !important;
+        }
+        .badge, .rounded-pill {
+            border-radius: 0 !important;
+        }
+        .modal-content {
+            border-radius: 0 !important;
+        }
+        /* Center modals over the content card, not the raw viewport - the navy
+           sidebar strip otherwise skews Bootstrap's full-viewport auto-margin
+           centering to the left. */
+        .modal {
+            padding-left: var(--lt-w) !important;
+        }
+        .form-control, .form-select {
+            border-radius: 0 !important;
+        }
+
+        /* Log out sits pinned at the bottom of the sidebar, below the scrollable nav. */
+        .lt-logout { flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.06); }
+    </style>
+    <script src="~/js/hemaui.js" asp-append-version="true"></script>
+</head>
+<body>
+    @{
+        var _action = ViewContext.RouteData.Values["action"]?.ToString();
+        bool sampleActive = _action == "SampleReceipt" || _action == "ReceiveSample" || _action == "EditSampleReceipt";
+        bool captureActive = _action == "CaptureResult";
+        bool verifyActive  = _action == "VerifyResult";
+
+        // Name + employee number come from LabTechController.OnActionExecuting.
+        string _meName = (ViewBag.TechName as string) ?? User.Identity?.Name ?? "";
+        string _meCode = (ViewBag.TechCode as string) ?? "";
+    }
+
+    <aside class="lt-sidebar">
+        <div class="lt-brand">
+            Hema Flow
+            <span class="lt-brand-sub">Lab Technician</span>
+        </div>
+
+        <nav class="lt-nav">
+            <div class="lt-nav-section">Workflow</div>
+            <a asp-controller="LabTech" asp-action="Dashboard"
+               class="lt-nav-link @(_action == "Dashboard" ? "active" : "")">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a asp-controller="LabTech" asp-action="MyTests"
+               class="lt-nav-link @(_action == "MyTests" ? "active" : "")">
+                <i class="bi bi-clipboard-check"></i> My Tests
+            </a>
+            <a asp-controller="LabTech" asp-action="SampleReceipt"
+               class="lt-nav-link @(sampleActive ? "active" : "")">
+                <i class="bi bi-droplet-fill"></i> Receive Samples
+            </a>
+            <a asp-controller="LabTech" asp-action="SelectTest"
+               class="lt-nav-link @(_action == "SelectTest" ? "active" : "")">
+                <i class="bi bi-ui-checks"></i> Select Test
+            </a>
+
+            <div class="lt-nav-section">Records</div>
+            <a asp-controller="LabTech" asp-action="VerificationHistory"
+               class="lt-nav-link @(_action == "VerificationHistory" ? "active" : "")">
+                <i class="bi bi-clock-history"></i> Verification History
+            </a>
+            <a asp-controller="LabTech" asp-action="Report"
+               class="lt-nav-link @(_action == "Report" ? "active" : "")">
+                <i class="bi bi-file-earmark-pdf"></i> Reports
+            </a>
+            <a asp-controller="LabTech" asp-action="ActivityLog"
+               class="lt-nav-link @(_action == "ActivityLog" ? "active" : "")">
+                <i class="bi bi-activity"></i> My Activity
+            </a>
+
+            <div class="lt-nav-section">Account</div>
+            <a asp-controller="LabTech" asp-action="Profile"
+               class="lt-nav-link @(_action == "Profile" ? "active" : "")">
+                <i class="bi bi-person-circle"></i> My Profile
+            </a>
+
+        </nav>
+		<div class="lt-logout">
+            <a asp-controller="Account" asp-action="Logout" class="lt-nav-link logout-link"
+               data-logout-confirm="You will need to sign in again to use the Lab Technician portal.">
+                <i class="bi bi-box-arrow-left"></i> Log out
+            </a>
+		</div>
+
+        <div class="lt-sidebar-footer">
+            <strong>@_meName</strong>
+            Lab Technician &bull; @_meCode
+        </div>
+    </aside>
+
+    <div id="pageLoadingBar">
+        <div class="loading-bars"><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+
+    <main class="lt-main">
+        <div class="lt-content-card">
+            @RenderBody()
+        </div>
+    </main>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/password-eye.js" asp-append-version="true"></script>
+
+    @if (TempData["Success"] is string success)
+    {
+        <div data-toast="success">@success</div>
+    }
+    @if (TempData["Error"] is string error)
+    {
+        <div data-toast="danger">@error</div>
+    }
+    @if (TempData["Info"] is string info)
+    {
+        <div data-toast="info">@info</div>
+    }
+
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content" style="border-radius:0.75rem; border:1px solid #e1e1e1;">
+                <div class="modal-body p-4 pb-3">
+                    <p class="fw-semibold mb-1">Confirm</p>
+                    <p class="text-muted small mb-0" id="confirmModalMsg"></p>
+                </div>
+                <div class="modal-footer border-0 pt-0 px-4 pb-4 gap-2">
+                    <button type="button" class="btn btn-outline-dark btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-dark btn-sm" id="confirmModalOk">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.querySelectorAll('.toast').forEach(el => new bootstrap.Toast(el).show());
+
+    (function () {
+        const modal  = document.getElementById('confirmModal');
+        const bsModal = new bootstrap.Modal(modal);
+        const msgEl  = document.getElementById('confirmModalMsg');
+        let onConfirm = null;
+
+        function showConfirm(message, callback) {
+            msgEl.textContent = message || 'Are you sure?';
+            onConfirm = callback;
+            bsModal.show();
+        }
+
+        // confirm-form: intercept whole form submit
+        document.querySelectorAll('.confirm-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                if (form.dataset.confirmed) return; // already confirmed, let it through (and fire the real submit event)
+                e.preventDefault();
+                showConfirm(form.dataset.message, () => { form.dataset.confirmed = '1'; form.requestSubmit(); });
+            });
+        });
+
+        // data-confirm on a button: intercept click, then submit parent form
+        document.querySelectorAll('[data-confirm]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                showConfirm(btn.dataset.confirm, () => {
+                    // set any hidden value the button was responsible for
+                    const target = btn.dataset.confirmTarget;
+                    const value  = btn.dataset.confirmValue;
+                    if (target && value) document.getElementById(target).value = value;
+                    btn.form.requestSubmit();
+                });
+            });
+        });
+
+        // Log out link: ask first, then follow the link
+        document.querySelectorAll('[data-logout-confirm]').forEach(function (a) {
+            a.addEventListener('click', function (e) {
+                e.preventDefault();
+                showConfirm(a.dataset.logoutConfirm, () => { window.location.href = a.href; });
+            });
+        });
+
+        document.getElementById('confirmModalOk').addEventListener('click', function () {
+            bsModal.hide();
+            if (onConfirm) { onConfirm(); onConfirm = null; }
+        });
+    })();
+    </script>
+
+    <script>
+    // Patient-detail pill tabs: Bootstrap swaps the panes (data-bs-target),
+    // this keeps the .active pill in sync within its own tab group.
+    document.addEventListener('click', function (e) {
+        var tab = e.target.closest('.pt-tabs .pt-tab');
+        if (!tab) return;
+        tab.closest('.pt-tabs').querySelectorAll('.pt-tab').forEach(function (t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+    });
+    </script>
+
+    <script>
+    // ── Loading feedback: a thin top bar during navigation/submit (this app's
+    // pages hit a remote DB and are genuinely slow sometimes - real feedback,
+    // not decoration), plus disabling + spinning the clicked submit button so
+    // a slow request can't be double-submitted.
+    (function () {
+        var bar = document.getElementById('pageLoadingBar');
+        function startLoading() {
+            if (!bar) return;
+            bar.classList.remove('active');
+            void bar.offsetWidth; // restart the transition if it was already mid-flight
+            bar.classList.add('active');
+        }
+
+        // Internal link navigation (nav, "View Patient", table action links, etc.) -
+        // skip modal/tab togglers, external links, downloads, and same-page anchors.
+        document.addEventListener('click', function (e) {
+            var a = e.target.closest('a[href]');
+            if (!a) return;
+            if (a.dataset.bsToggle || a.target === '_blank' || a.hasAttribute('download')) return;
+            var href = a.getAttribute('href');
+            if (!href || href.charAt(0) === '#' || href.indexOf('javascript:') === 0) return;
+            startLoading();
+        });
+
+        // Every real form submission (direct, or via the confirm-modal flow
+        // above, which now uses requestSubmit() so this still fires). The
+        // confirm-form/data-confirm handlers call preventDefault() on the
+        // FIRST submit (to show the dialog) before this listener sees it
+        // (target-phase listeners run before it bubbles to document) - skip
+        // those, or the overlay would show while the confirm dialog is still
+        // open and block the Confirm button underneath it.
+        document.addEventListener('submit', function (e) {
+            if (e.defaultPrevented) return;
+            var form = e.target;
+            if (form.dataset.noLoading) return;
+            startLoading();
+
+            var btn = form.querySelector('button[type="submit"]:not([data-no-spinner])');
+            if (btn && !btn.disabled) {
+                btn.dataset.originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing…';
+            }
+        });
+    })();
+    </script>
+
+    <script>
+    // ── Lazy-loaded trail modals (VerificationHistory): the audit-trail
+    // content only fetches the first time a given row's modal is opened,
+    // instead of every row's full history shipping in the initial page.
+    document.addEventListener('show.bs.modal', function (e) {
+        var lazy = e.target.querySelector('.trail-lazy[data-url]');
+        if (!lazy || lazy.dataset.loaded) return;
+        lazy.dataset.loaded = '1';
+        fetch(lazy.dataset.url)
+            .then(function (r) { return r.ok ? r.text() : Promise.reject(); })
+            .then(function (html) { lazy.innerHTML = html; })
+            .catch(function () {
+                lazy.innerHTML = '<div class="trail-empty text-danger">Could not load history. Please try again.</div>';
+                lazy.dataset.loaded = '';
+            });
+    });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

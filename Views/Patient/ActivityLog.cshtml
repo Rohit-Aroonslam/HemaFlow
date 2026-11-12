@@ -1,0 +1,49 @@
+@model Project.Models.PatientActivityLogViewModel
+@{
+    Layout = "_PatientLayout";
+    ViewData["Title"] = "Activity Log | Hema Flow";
+}
+
+<div class="row align-items-center mb-4 g-3">
+    <div class="col-md-8">
+        <h4 class="fw-700 mb-1" style="color: #0f172a;">Activity Log</h4>
+        <p class="text-muted small mb-0">A history of actions taken on your account - profile edits, consent changes, and password updates.</p>
+    </div>
+</div>
+
+<div class="card mb-0">
+    <div class="card-header justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-clock-history text-primary"></i>
+            <span>Your History</span>
+        </div>
+        <span class="text-muted x-small">@Model.Entries.Count entries</span>
+    </div>
+    <div class="p-0">
+        @if (!Model.Entries.Any())
+        {
+            <div class="p-4 text-center text-muted small">No activity recorded yet.</div>
+        }
+        else
+        {
+            @foreach (var entry in Model.Entries)
+            {
+                <div class="d-flex align-items-start gap-3 px-3 py-3 border-bottom" style="font-size:0.85rem;">
+                    <div class="d-flex align-items-center justify-content-center flex-shrink-0 rounded-circle bg-light border text-primary"
+                         style="width:32px;height:32px;font-size:0.85rem;margin-top:2px;">
+                        <i class="bi @entry.Icon"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                            <span class="fw-600 text-dark">@entry.Action</span>
+                            <span class="text-muted flex-shrink-0" style="font-size:0.72rem; white-space:nowrap;">
+                                @entry.Timestamp.ToString("d MMM yyyy") &bull; @entry.Timestamp.ToString("HH:mm")
+                            </span>
+                        </div>
+                        <div class="text-muted mt-1" style="font-size:0.78rem; line-height:1.4;">@entry.Detail</div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

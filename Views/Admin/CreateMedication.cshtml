@@ -1,0 +1,78 @@
+﻿@model Project.Models.CreateMedicationViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Add Medication | Hema Flow";
+}
+
+<div class="row align-items-center mb-4 g-3">
+    <div class="col-md-6">
+        <h4 class="fw-700 mb-1" style="color: #0f172a;">Add Medication</h4>
+        <p class="text-muted small mb-0">Add a new medication to the list patients can select in their health profiles.</p>
+    </div>
+    <div class="col-md-6 d-flex justify-content-md-end">
+        <a asp-controller="Admin" asp-action="Medications" class="btn btn-outline-secondary py-2 px-3">
+            <i class="bi bi-arrow-left me-2"></i>Back to Medications
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card mb-0">
+            <div class="card-header">
+                <i class="bi bi-capsule text-info me-2"></i>Medication Details
+            </div>
+            <div class="p-4">
+                <form asp-action="CreateMedication" asp-controller="Admin" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="EditId" value="@Model.EditId" />
+                    <div class="mb-3">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Medication Name <span class="text-danger">*</span></label>
+                        <input type="text" name="Name" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small"
+                               placeholder="e.g. Metformin" required value="@Model.Name">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Category <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <select name="CategoryId" class="form-select bg-light border-0 rounded-0 shadow-none py-2 small" required>
+                                <option value="" disabled selected>Select a category...</option>
+                                @foreach (var cat in Model.Categories)
+                                {
+                                    @if (cat.Id == Model.CategoryId)
+                                    {
+                                        <option value="@cat.Id" selected>@cat.Name</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@cat.Id">@cat.Name</option>
+                                    }
+                                }
+                            </select>
+                            <a asp-controller="Admin" asp-action="GlobalCategories" class="btn btn-outline-secondary border d-flex align-items-center" title="Manage Categories">
+                                <i class="bi bi-gear text-muted"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label x-small text-muted text-uppercase fw-600 mb-1">Notes (Optional)</label>
+                        <textarea name="Notes" class="form-control bg-light border-0 rounded-0 shadow-none py-2 small" rows="3"
+                                  placeholder="Any relevant notes about this medication...">@Model.Notes</textarea>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end pt-2 border-top">
+                        <a asp-controller="Admin" asp-action="Medications" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-dark px-4">Save Medication</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card p-3 mb-0">
+            <div class="fw-600 text-dark small mb-2"><i class="bi bi-lightbulb text-warning me-2"></i>Tips</div>
+            <ul class="list-unstyled mb-0 d-flex flex-column gap-2" style="font-size:0.78rem; color:#64748b;">
+                <li><strong class="text-dark">Name:</strong> Use the generic name (e.g. "Metformin"), not a brand name.</li>
+                <li><strong class="text-dark">Category:</strong> If no suitable category exists, add one first under <a asp-controller="Admin" asp-action="GlobalCategories">Categories</a>.</li>
+            </ul>
+        </div>
+    </div>
+</div>
